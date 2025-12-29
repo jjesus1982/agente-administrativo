@@ -1,0 +1,40 @@
+[Unit]
+Description=Conecta Plus - Plataforma Unificada
+After=network.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+User=root
+Group=root
+WorkingDirectory=/opt/conecta_plus
+
+# Variáveis de ambiente
+Environment="ENVIRONMENT=production"
+Environment="PORT=8000"
+Environment="LLM_PROVIDER=openai"
+Environment="OPENAI_API_KEY=sk-proj-SUA-CHAVE-AQUI"
+Environment="OPENAI_MODEL=gpt-4o"
+Environment="DEVICE_DEFAULT_USER=admin"
+Environment="DEVICE_DEFAULT_PASS=admin"
+
+# Comando de execução
+ExecStart=/opt/conecta_plus/venv/bin/uvicorn main:app --host 0.0.0.0 --port 8000
+
+# Restart automático
+Restart=always
+RestartSec=5
+StartLimitBurst=5
+StartLimitIntervalSec=60
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=conecta-plus
+
+# Limites
+LimitNOFILE=65536
+LimitNPROC=4096
+
+[Install]
+WantedBy=multi-user.target

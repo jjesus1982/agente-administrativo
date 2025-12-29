@@ -1,0 +1,454 @@
+# Conecta Plus - Docker Compose Scalable (1000+ Users)
+# Arquitetura distribuída com load balancing e alta disponibilidade
+version: '3.8'
+
+services:
+  # =============================================================================
+  # NGINX LOAD BALANCER
+  # =============================================================================
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: conecta-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - ./nginx/ssl:/etc/nginx/ssl:ro
+      - ./nginx/logs:/var/log/nginx
+      - uploads_shared:/var/www/uploads:ro
+    depends_on:
+      - api-1
+      - api-2
+      - api-3
+    networks:
+      - conecta-frontend
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+        reservations:
+          cpus: '0.25'
+          memory: 128M
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "nginx", "-t"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+  # =============================================================================
+  # API INSTANCES (3x for load distribution)
+  # =============================================================================
+  api-1:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: conecta-api-1
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@db-master:5432/conecta_plus
+      - DATABASE_READ_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@db-replica:5432/conecta_plus
+      - REDIS_URL=redis://redis-sentinel:26379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=false
+      - ENVIRONMENT=production
+      - GUNICORN_WORKERS=8
+      - GUNICORN_LOG_LEVEL=warning
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_REQUESTS=150
+      - RATE_LIMIT_WINDOW=60
+      - INSTANCE_ID=api-1
+      - DB_POOL_SIZE=40
+      - DB_MAX_OVERFLOW=20
+      - REDIS_MAX_CONNECTIONS=20
+    depends_on:
+      db-master:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    volumes:
+      - uploads_shared:/app/uploads
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    command: gunicorn -c gunicorn.conf.py app.main:app
+
+  api-2:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: conecta-api-2
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@db-master:5432/conecta_plus
+      - DATABASE_READ_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@db-replica:5432/conecta_plus
+      - REDIS_URL=redis://redis-sentinel:26379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=false
+      - ENVIRONMENT=production
+      - GUNICORN_WORKERS=8
+      - GUNICORN_LOG_LEVEL=warning
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_REQUESTS=150
+      - RATE_LIMIT_WINDOW=60
+      - INSTANCE_ID=api-2
+      - DB_POOL_SIZE=40
+      - DB_MAX_OVERFLOW=20
+      - REDIS_MAX_CONNECTIONS=20
+    depends_on:
+      db-master:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    volumes:
+      - uploads_shared:/app/uploads
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    command: gunicorn -c gunicorn.conf.py app.main:app
+
+  api-3:
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+    container_name: conecta-api-3
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@db-master:5432/conecta_plus
+      - DATABASE_READ_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@db-replica:5432/conecta_plus
+      - REDIS_URL=redis://redis-sentinel:26379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=false
+      - ENVIRONMENT=production
+      - GUNICORN_WORKERS=8
+      - GUNICORN_LOG_LEVEL=warning
+      - RATE_LIMIT_ENABLED=true
+      - RATE_LIMIT_REQUESTS=150
+      - RATE_LIMIT_WINDOW=60
+      - INSTANCE_ID=api-3
+      - DB_POOL_SIZE=40
+      - DB_MAX_OVERFLOW=20
+      - REDIS_MAX_CONNECTIONS=20
+    depends_on:
+      db-master:
+        condition: service_healthy
+      redis-master:
+        condition: service_healthy
+    volumes:
+      - uploads_shared:/app/uploads
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '4.0'
+          memory: 4G
+        reservations:
+          cpus: '1.0'
+          memory: 1G
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+    restart: unless-stopped
+    command: gunicorn -c gunicorn.conf.py app.main:app
+
+  # =============================================================================
+  # DATABASE MASTER/REPLICA SETUP
+  # =============================================================================
+  db-master:
+    image: postgres:16-alpine
+    container_name: conecta-db-master
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: conecta_plus
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+    volumes:
+      - postgres_master_data:/var/lib/postgresql/data
+      - ./postgres/init-replication.sh:/docker-entrypoint-initdb.d/init-replication.sh:ro
+      - ./postgres/master-postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    ports:
+      - "5433:5432"
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "config_file=/etc/postgresql/postgresql.conf"
+
+  db-replica:
+    image: postgres:16-alpine
+    container_name: conecta-db-replica
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: conecta_plus
+      POSTGRES_MASTER_HOST: db-master
+      POSTGRES_REPLICATION_USER: replicator
+      POSTGRES_REPLICATION_PASSWORD: ${REPLICATION_PASSWORD}
+    volumes:
+      - postgres_replica_data:/var/lib/postgresql/data
+      - ./postgres/init-replica.sh:/docker-entrypoint-initdb.d/init-replica.sh:ro
+      - ./postgres/replica-postgresql.conf:/etc/postgresql/postgresql.conf:ro
+    ports:
+      - "5434:5432"
+    depends_on:
+      db-master:
+        condition: service_healthy
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "config_file=/etc/postgresql/postgresql.conf"
+
+  # =============================================================================
+  # REDIS CLUSTER SETUP
+  # =============================================================================
+  redis-master:
+    image: redis:7-alpine
+    container_name: conecta-redis-master
+    ports:
+      - "6380:6379"
+    volumes:
+      - redis_master_data:/data
+      - ./redis/master.conf:/etc/redis/redis.conf:ro
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    command: redis-server /etc/redis/redis.conf
+
+  redis-slave:
+    image: redis:7-alpine
+    container_name: conecta-redis-slave
+    ports:
+      - "6381:6379"
+    volumes:
+      - redis_slave_data:/data
+      - ./redis/slave.conf:/etc/redis/redis.conf:ro
+    depends_on:
+      redis-master:
+        condition: service_healthy
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    command: redis-server /etc/redis/redis.conf
+
+  redis-sentinel:
+    image: redis:7-alpine
+    container_name: conecta-redis-sentinel
+    ports:
+      - "26379:26379"
+    volumes:
+      - ./redis/sentinel.conf:/etc/redis/sentinel.conf:ro
+    depends_on:
+      - redis-master
+      - redis-slave
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "redis-cli", "-p", "26379", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    command: redis-sentinel /etc/redis/sentinel.conf
+
+  # =============================================================================
+  # MONITORING CLUSTER
+  # =============================================================================
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: conecta-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus/prometheus-cluster.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+      - '--web.enable-lifecycle'
+      - '--storage.tsdb.retention.time=7d'
+      - '--web.enable-admin-api'
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: conecta-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://${DOMAIN}/monitoring/
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/dashboards:/etc/grafana/provisioning/dashboards
+      - ./grafana/datasources:/etc/grafana/provisioning/datasources
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 512M
+
+  # =============================================================================
+  # CDN/STATIC FILES
+  # =============================================================================
+  minio:
+    image: minio/minio:RELEASE.2024-01-16T16-07-38Z
+    container_name: conecta-minio
+    ports:
+      - "9000:9000"
+      - "9001:9001"
+    environment:
+      MINIO_ROOT_USER: ${MINIO_ROOT_USER:-admin}
+      MINIO_ROOT_PASSWORD: ${MINIO_ROOT_PASSWORD:-password123}
+    volumes:
+      - minio_data:/data
+    networks:
+      - conecta-backend
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+        reservations:
+          cpus: '0.25'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:9000/minio/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    command: server /data --console-address ":9001"
+
+# =============================================================================
+# VOLUMES
+# =============================================================================
+volumes:
+  postgres_master_data:
+  postgres_replica_data:
+  redis_master_data:
+  redis_slave_data:
+  prometheus_data:
+  grafana_data:
+  minio_data:
+  uploads_shared:
+
+# =============================================================================
+# NETWORKS
+# =============================================================================
+networks:
+  conecta-frontend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.20.0.0/16
+  conecta-backend:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.21.0.0/16

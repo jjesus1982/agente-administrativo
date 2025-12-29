@@ -1,0 +1,11 @@
+# Grafana Dashboards Provisioning
+apiVersion: 1
+
+providers:
+  - name: 'conecta-plus-dashboards'
+    type: file
+    disableDeletion: false
+    updateIntervalSeconds: 30
+    allowUiUpdates: true
+    options:
+      path: /etc/grafana/provisioning/dashboards/json

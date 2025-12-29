@@ -1,0 +1,312 @@
+/**
+ * Template de exemplo para criar novos testes E2E
+ *
+ * Como usar:
+ * 1. Copie este arquivo e renomeie para [nome].spec.ts
+ * 2. Substitua os placeholders pelos valores reais
+ * 3. Implemente seus testes seguindo a estrutura
+ *
+ * Exemplo: cp example.spec.ts.template moradores.spec.ts
+ */
+
+import { test, expect } from '@playwright/test';
+import { login, logout, TEST_CREDENTIALS } from './helpers';
+
+test.describe('Nome do Modulo', () => {
+  // Executar antes de cada teste
+  test.beforeEach(async ({ page }) => {
+    // Fazer login antes de cada teste (se necessario)
+    await login(page);
+  });
+
+  // Executar apos cada teste
+  test.afterEach(async ({ page }) => {
+    // Cleanup se necessario
+    // await logout(page);
+  });
+
+  test.describe('Funcionalidade 1', () => {
+    test('deve fazer algo especifico', async ({ page }) => {
+      // Arrange - Preparar dados
+      const testData = {
+        campo1: 'valor1',
+        campo2: 'valor2',
+      };
+
+      // Act - Executar acao
+      await page.goto('/rota-desejada');
+      await page.fill('input[name="campo1"]', testData.campo1);
+      await page.fill('input[name="campo2"]', testData.campo2);
+      await page.click('button[type="submit"]');
+
+      // Assert - Verificar resultado
+      await expect(page.locator('text=/sucesso|salvo/i')).toBeVisible();
+    });
+
+    test('deve exibir mensagem de erro em caso de falha', async ({ page }) => {
+      // Arrange
+      await page.goto('/rota-desejada');
+
+      // Act - Tentar submeter sem preencher campos
+      await page.click('button[type="submit"]');
+
+      // Assert
+      await expect(page.locator('text=/erro|obrigatorio/i')).toBeVisible();
+    });
+  });
+
+  test.describe('Funcionalidade 2 - CRUD', () => {
+    test('deve criar novo registro', async ({ page }) => {
+      await page.goto('/rota-listagem');
+
+      // Clicar em "Novo"
+      await page.click('button:has-text("Novo")');
+
+      // Preencher formulario
+      await page.fill('input[name="nome"]', 'Teste E2E');
+      await page.click('button[type="submit"]');
+
+      // Verificar sucesso
+      await expect(page.locator('text=/criado com sucesso/i')).toBeVisible();
+    });
+
+    test('deve listar registros', async ({ page }) => {
+      await page.goto('/rota-listagem');
+
+      // Aguardar carregamento
+      await page.waitForSelector('table tbody tr', { timeout: 10000 });
+
+      // Verificar se ha registros
+      const rows = page.locator('table tbody tr');
+      const count = await rows.count();
+      expect(count).toBeGreaterThan(0);
+    });
+
+    test('deve editar registro existente', async ({ page }) => {
+      await page.goto('/rota-listagem');
+
+      // Aguardar listagem
+      await page.waitForSelector('table tbody tr');
+
+      // Clicar em editar no primeiro item
+      await page.locator('table tbody tr').first().locator('button:has-text("Editar")').click();
+
+      // Modificar campo
+      await page.fill('input[name="nome"]', 'Nome Editado E2E');
+      await page.click('button[type="submit"]');
+
+      // Verificar sucesso
+      await expect(page.locator('text=/atualizado com sucesso/i')).toBeVisible();
+    });
+
+    test('deve excluir registro', async ({ page }) => {
+      await page.goto('/rota-listagem');
+
+      // Aguardar listagem
+      await page.waitForSelector('table tbody tr');
+
+      // Clicar em excluir
+      await page.locator('table tbody tr').first().locator('button:has-text("Excluir")').click();
+
+      // Confirmar exclusao
+      await page.locator('button:has-text("Confirmar")').click();
+
+      // Verificar sucesso
+      await expect(page.locator('text=/excluido com sucesso/i')).toBeVisible();
+    });
+  });
+
+  test.describe('Filtros e Busca', () => {
+    test('deve filtrar registros por texto', async ({ page }) => {
+      await page.goto('/rota-listagem');
+
+      // Digitar no campo de busca
+      await page.fill('input[type="search"]', 'termo de busca');
+
+      // Aguardar resultados
+      await page.waitForTimeout(1000);
+
+      // Verificar que resultados contem o termo
+      const results = await page.locator('table tbody tr').first().textContent();
+      expect(results?.toLowerCase()).toContain('termo de busca');
+    });
+
+    test('deve filtrar por data', async ({ page }) => {
+      await page.goto('/rota-listagem');
+
+      // Selecionar data
+      const today = new Date().toISOString().split('T')[0];
+      await page.fill('input[type="date"]', today);
+
+      // Aguardar resultados
+      await page.waitForTimeout(1000);
+
+      // Verificar que ha resultados
+      const count = await page.locator('table tbody tr').count();
+      expect(count).toBeGreaterThanOrEqual(0);
+    });
+
+    test('deve limpar filtros', async ({ page }) => {
+      await page.goto('/rota-listagem');
+
+      // Aplicar filtro
+      await page.fill('input[type="search"]', 'teste');
+      await page.waitForTimeout(500);
+
+      // Limpar filtros
+      await page.click('button:has-text("Limpar")');
+
+      // Verificar que campo foi limpo
+      const searchValue = await page.locator('input[type="search"]').inputValue();
+      expect(searchValue).toBe('');
+    });
+  });
+
+  test.describe('Paginacao', () => {
+    test('deve navegar entre paginas', async ({ page }) => {
+      await page.goto('/rota-listagem');
+
+      // Verificar se ha paginacao
+      const nextButton = page.locator('button:has-text("Proxima"), [aria-label="Next"]');
+
+      if (await nextButton.count() > 0 && await nextButton.isEnabled()) {
+        // Clicar em proxima pagina
+        await nextButton.click();
+
+        // Aguardar carregamento
+        await page.waitForTimeout(1000);
+
+        // Verificar que ainda ha registros
+        const count = await page.locator('table tbody tr').count();
+        expect(count).toBeGreaterThan(0);
+      }
+    });
+
+    test('deve alterar itens por pagina', async ({ page }) => {
+      await page.goto('/rota-listagem');
+
+      // Procurar select de itens por pagina
+      const itemsPerPageSelect = page.locator('select[name="pageSize"]');
+
+      if (await itemsPerPageSelect.count() > 0) {
+        // Alterar para 50 itens
+        await itemsPerPageSelect.selectOption('50');
+
+        // Aguardar carregamento
+        await page.waitForTimeout(1000);
+
+        // Verificar que tabela foi atualizada
+        await expect(page.locator('table tbody tr')).toBeVisible();
+      }
+    });
+  });
+
+  test.describe('Validacoes', () => {
+    test('deve validar campos obrigatorios', async ({ page }) => {
+      await page.goto('/rota-formulario');
+
+      // Tentar submeter sem preencher
+      await page.click('button[type="submit"]');
+
+      // Verificar mensagens de validacao
+      await expect(page.locator('text=/obrigatorio|required/i')).toBeVisible();
+    });
+
+    test('deve validar formato de email', async ({ page }) => {
+      await page.goto('/rota-formulario');
+
+      // Preencher email invalido
+      await page.fill('input[type="email"]', 'email-invalido');
+      await page.click('button[type="submit"]');
+
+      // Verificar mensagem de erro
+      await expect(page.locator('text=/email invalido|invalid email/i')).toBeVisible();
+    });
+
+    test('deve validar tamanho minimo de campos', async ({ page }) => {
+      await page.goto('/rota-formulario');
+
+      // Preencher campo com texto muito curto
+      await page.fill('input[name="nome"]', 'ab');
+      await page.click('button[type="submit"]');
+
+      // Verificar mensagem de erro
+      await expect(page.locator('text=/minimo|muito curto/i')).toBeVisible();
+    });
+  });
+
+  test.describe('Integracao com API', () => {
+    test('deve carregar dados da API', async ({ page }) => {
+      // Interceptar requisicao
+      const responsePromise = page.waitForResponse(
+        response => response.url().includes('/api/endpoint') && response.status() === 200
+      );
+
+      await page.goto('/rota-com-api');
+
+      // Aguardar resposta
+      const response = await responsePromise;
+      const data = await response.json();
+
+      // Verificar dados
+      expect(data).toBeDefined();
+      expect(Array.isArray(data) || typeof data === 'object').toBeTruthy();
+    });
+
+    test('deve lidar com erro da API', async ({ page }) => {
+      // Simular erro da API (se possivel)
+      await page.route('**/api/endpoint', route => {
+        route.fulfill({
+          status: 500,
+          body: JSON.stringify({ error: 'Erro interno' }),
+        });
+      });
+
+      await page.goto('/rota-com-api');
+
+      // Verificar mensagem de erro
+      await expect(page.locator('text=/erro|falha/i')).toBeVisible();
+    });
+  });
+
+  test.describe('Performance', () => {
+    test('deve carregar pagina em tempo aceitavel', async ({ page }) => {
+      const startTime = Date.now();
+
+      await page.goto('/rota-desejada');
+      await page.waitForLoadState('networkidle');
+
+      const loadTime = Date.now() - startTime;
+
+      // Verificar que carregou em menos de 5 segundos
+      expect(loadTime).toBeLessThan(5000);
+    });
+  });
+
+  test.describe('Acessibilidade', () => {
+    test('deve ter titulo na pagina', async ({ page }) => {
+      await page.goto('/rota-desejada');
+
+      const title = await page.title();
+      expect(title).toBeTruthy();
+      expect(title.length).toBeGreaterThan(0);
+    });
+
+    test('deve ter labels nos inputs', async ({ page }) => {
+      await page.goto('/rota-formulario');
+
+      const inputs = page.locator('input');
+      const count = await inputs.count();
+
+      for (let i = 0; i < count; i++) {
+        const input = inputs.nth(i);
+        const id = await input.getAttribute('id');
+
+        if (id) {
+          const label = page.locator(`label[for="${id}"]`);
+          await expect(label).toBeVisible();
+        }
+      }
+    });
+  });
+});

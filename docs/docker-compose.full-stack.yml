@@ -1,0 +1,270 @@
+# Conecta Plus - Full Stack Docker Compose
+# Incluindo Nginx e Certbot para SSL automático
+version: '3.8'
+
+services:
+  # API Backend
+  api:
+    build:
+      context: ../backend
+      dockerfile: Dockerfile
+    container_name: conecta-api
+    environment:
+      - DATABASE_URL=postgresql+asyncpg://postgres:${DB_PASSWORD}@db:5432/conecta_plus
+      - REDIS_URL=redis://redis:6379/0
+      - SECRET_KEY=${SECRET_KEY}
+      - DEBUG=false
+      - ENVIRONMENT=production
+      - GUNICORN_WORKERS=4
+      - GUNICORN_LOG_LEVEL=warning
+      - RATE_LIMIT_ENABLED=true
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    command: gunicorn -c gunicorn.conf.py app.main:app
+    networks:
+      - conecta-network
+    expose:
+      - "8100"
+    deploy:
+      resources:
+        limits:
+          cpus: '2.0'
+          memory: 2G
+        reservations:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8100/health/live"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 40s
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # PostgreSQL Database
+  db:
+    image: postgres:16-alpine
+    container_name: conecta-db
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: conecta_plus
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./init-db.sql:/docker-entrypoint-initdb.d/init.sql:ro
+    networks:
+      - conecta-network
+    expose:
+      - "5432"
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 5s
+      retries: 5
+    deploy:
+      resources:
+        limits:
+          cpus: '1.0'
+          memory: 1G
+    restart: unless-stopped
+    command:
+      - "postgres"
+      - "-c"
+      - "max_connections=200"
+      - "-c"
+      - "shared_buffers=256MB"
+      - "-c"
+      - "effective_cache_size=768MB"
+
+  # Redis Cache
+  redis:
+    image: redis:7-alpine
+    container_name: conecta-redis
+    volumes:
+      - redis_data:/data
+    networks:
+      - conecta-network
+    expose:
+      - "6379"
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    command: redis-server --maxmemory 256mb --maxmemory-policy allkeys-lru --appendonly yes
+
+  # Nginx Reverse Proxy
+  nginx:
+    image: nginx:1.25-alpine
+    container_name: conecta-nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d:ro
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf:ro
+      - certbot_conf:/etc/letsencrypt:ro
+      - certbot_www:/var/www/certbot:ro
+      - nginx_cache:/var/cache/nginx
+      - nginx_logs:/var/log/nginx
+    depends_on:
+      - api
+    networks:
+      - conecta-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    healthcheck:
+      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+    restart: unless-stopped
+    logging:
+      driver: "json-file"
+      options:
+        max-size: "10m"
+        max-file: "3"
+
+  # Certbot para SSL
+  certbot:
+    image: certbot/certbot:latest
+    container_name: conecta-certbot
+    volumes:
+      - certbot_conf:/etc/letsencrypt
+      - certbot_www:/var/www/certbot
+    networks:
+      - conecta-network
+    # Renovação automática a cada 12 horas
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    restart: unless-stopped
+
+  # Prometheus (Monitoring)
+  prometheus:
+    image: prom/prometheus:v2.48.0
+    container_name: conecta-prometheus
+    ports:
+      - "9090:9090"
+    volumes:
+      - ./prometheus.yml:/etc/prometheus/prometheus.yml:ro
+      - prometheus_data:/prometheus
+    command:
+      - '--config.file=/etc/prometheus/prometheus.yml'
+      - '--storage.tsdb.path=/prometheus'
+      - '--web.console.libraries=/usr/share/prometheus/console_libraries'
+      - '--web.console.templates=/usr/share/prometheus/consoles'
+    networks:
+      - conecta-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 512M
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # Grafana (Dashboards)
+  grafana:
+    image: grafana/grafana:10.2.2
+    container_name: conecta-grafana
+    ports:
+      - "3001:3000"
+    environment:
+      - GF_SECURITY_ADMIN_PASSWORD=${GRAFANA_PASSWORD:-admin}
+      - GF_USERS_ALLOW_SIGN_UP=false
+      - GF_SERVER_ROOT_URL=https://grafana.seudominio.com.br
+      - GF_INSTALL_PLUGINS=grafana-clock-panel,grafana-simple-json-datasource
+    volumes:
+      - grafana_data:/var/lib/grafana
+      - ./grafana/provisioning:/etc/grafana/provisioning:ro
+    depends_on:
+      - prometheus
+    networks:
+      - conecta-network
+    deploy:
+      resources:
+        limits:
+          cpus: '0.5'
+          memory: 256M
+    restart: unless-stopped
+    profiles:
+      - monitoring
+
+  # PostgreSQL Backup (agendado)
+  backup:
+    image: postgres:16-alpine
+    container_name: conecta-backup
+    volumes:
+      - ./backups:/backups
+      - ./scripts/backup-db.sh:/backup.sh:ro
+    environment:
+      - PGHOST=db
+      - PGPORT=5432
+      - PGDATABASE=conecta_plus
+      - PGUSER=postgres
+      - PGPASSWORD=${DB_PASSWORD}
+    depends_on:
+      - db
+    networks:
+      - conecta-network
+    # Executar backup diário às 3h
+    entrypoint: |
+      sh -c '
+        while true; do
+          CURRENT_HOUR=$$(date +%H)
+          if [ "$$CURRENT_HOUR" = "03" ]; then
+            echo "[$(date)] Iniciando backup..."
+            pg_dump -h db -U postgres conecta_plus | gzip > /backups/backup_$$(date +%Y%m%d_%H%M%S).sql.gz
+            echo "[$(date)] Backup concluído"
+            find /backups -name "*.sql.gz" -mtime +7 -delete
+            sleep 3600
+          else
+            sleep 3600
+          fi
+        done
+      '
+    restart: unless-stopped
+    profiles:
+      - backup
+
+volumes:
+  postgres_data:
+    driver: local
+  redis_data:
+    driver: local
+  prometheus_data:
+    driver: local
+  grafana_data:
+    driver: local
+  certbot_conf:
+    driver: local
+  certbot_www:
+    driver: local
+  nginx_cache:
+    driver: local
+  nginx_logs:
+    driver: local
+
+networks:
+  conecta-network:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.25.0.0/16

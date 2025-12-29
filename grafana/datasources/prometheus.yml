@@ -1,0 +1,35 @@
+# Grafana Datasources Configuration
+apiVersion: 1
+
+datasources:
+  - name: Prometheus
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    isDefault: true
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: GET
+      manageAlerts: true
+      prometheusType: Prometheus
+      prometheusVersion: 2.48.0
+      cacheLevel: 'High'
+      incrementalQuerying: true
+      incrementalQueryOverlapWindow: 10m
+
+  - name: Prometheus-Cluster
+    type: prometheus
+    access: proxy
+    url: http://prometheus:9090
+    editable: true
+    jsonData:
+      timeInterval: "15s"
+      queryTimeout: "60s"
+      httpMethod: GET
+      exemplarTraceIdDestinations:
+        - name: trace_id
+          url: http://jaeger:16686/trace/$${__value.raw}
+      prometheusType: Prometheus
+      prometheusVersion: 2.48.0
