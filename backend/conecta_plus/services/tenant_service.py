@@ -10,12 +10,12 @@ from typing import List, Optional, Dict, Any
 from sqlalchemy.orm import Session
 from sqlalchemy import func, and_
 
-from app.models.tenant import Tenant
-from app.models.unit import Unit
-from app.models.user import User
-from app.schemas.tenant_schemas import TenantCreateSchema, TenantUpdateSchema
-from app.core.logger import get_logger
-from app.core.exceptions import ValidationError, NotFoundError
+from conecta_plus.models.tenant import Tenant
+from conecta_plus.models.unit import Unit
+from conecta_plus.models.user import User
+from conecta_plus.schemas.tenant_schemas import TenantCreateSchema, TenantUpdateSchema
+from conecta_plus.core.logger import get_logger
+from conecta_plus.core.exceptions import ValidationError, NotFoundError
 
 logger = get_logger(__name__)
 

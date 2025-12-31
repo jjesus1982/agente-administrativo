@@ -1,9 +1,9 @@
 "use client";
 import React, { useState } from 'react';
 import {
-  Building2, Plus, X, Save, ArrowLeft, MapPin, Hash, Mail, Phone,
-  Home, Users, Shield, Settings, Flame, Waves, Car, Calendar,
-  ChevronDown, ChevronUp, Info, AlertTriangle
+  Building2, Plus, X, Save, ArrowLeft,
+  Home, Shield, Settings, Waves, Calendar,
+  ChevronDown, ChevronUp, Info
 } from 'lucide-react';
 import { Card, Button, Badge } from '@/components/ui';
 import { useRouter } from 'next/navigation';
@@ -102,11 +102,9 @@ const funcionalidadesPadrao = {
   veiculos: { label: 'Controle de Veículos', default: true },
   ocorrencias: { label: 'Ocorrências', default: true },
   comunicados: { label: 'Comunicados', default: true },
-  ligacoes: { label: 'Ligações Portaria', default: true },
   classificados: { label: 'Classificados', default: false },
   enquetes: { label: 'Enquetes', default: true },
   financeiro: { label: 'Gestão Financeira', default: false },
-  portaria_remota: { label: 'Portaria Remota', default: true },
   reconhecimento_facial: { label: 'Reconhecimento Facial', default: false },
   qr_code: { label: 'QR Code', default: true }
 };
@@ -184,7 +182,7 @@ export default function CriarCondominioPage() {
     }));
   };
 
-  const atualizarAgrupador = (index: number, campo: string, valor: any) => {
+  const atualizarAgrupador = (index: number, campo: keyof AgrupadorForm, valor: AgrupadorForm[keyof AgrupadorForm]) => {
     setFormData(prev => ({
       ...prev,
       agrupadores: prev.agrupadores.map((agrupador, i) =>
@@ -219,7 +217,7 @@ export default function CriarCondominioPage() {
     }));
   };
 
-  const atualizarAreaComum = (index: number, campo: string, valor: any) => {
+  const atualizarAreaComum = (index: number, campo: keyof AreaComumForm, valor: AreaComumForm[keyof AreaComumForm]) => {
     setFormData(prev => ({
       ...prev,
       areas_comuns: prev.areas_comuns.map((area, i) =>
@@ -639,7 +637,7 @@ export default function CriarCondominioPage() {
                       border: '1px dashed var(--border-color)',
                       borderRadius: '8px'
                     }}>
-                      Nenhum agrupador configurado. Clique em "Adicionar" para começar.
+                      Nenhum agrupador configurado. Clique em &quot;Adicionar&quot; para começar.
                     </div>
                   ) : (
                     <div style={{ display: 'grid', gap: '0.75rem' }}>

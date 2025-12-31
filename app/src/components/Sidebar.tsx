@@ -1,18 +1,19 @@
 "use client";
 import React, { useState, useEffect } from 'react';
 import { useRouter, usePathname } from 'next/navigation';
+import Image from 'next/image';
 import { useAuth } from '@/context/AuthContext';
 import { Package, Calendar,
   LayoutDashboard, Megaphone, Building2, ClipboardList, Wrench, AlertTriangle,
   FileText, Vote, BarChart3, Users, Settings, LogOut, ChevronLeft, ChevronRight,
-  User, Bell, ChevronDown, ShieldCheck
+  User, Bell, ChevronDown, Brain
 } from 'lucide-react';
 
 import { api, API_BASE } from '@/lib/api';
 
 const menuItems = [
   { icon: LayoutDashboard, label: 'Dashboard', path: '/dashboard' },
-  { icon: ShieldCheck, label: 'Portaria', path: '/portaria' },
+  { icon: Brain, label: 'Inteligência', path: '/ia/overview' },
   { icon: Megaphone, label: 'Comunicados', path: '/announcements' },
   { icon: Calendar, label: 'Reservas', path: '/reservas' },
   { icon: Building2, label: 'Gestão Condominial', path: '/management' },
@@ -73,12 +74,12 @@ export default function Sidebar() {
   useEffect(() => {
     const fetchProfile = async () => {
       try {
-        const res = await api.get('/profile/me');
+        const res = await api.get('/auth/auth/me');
         if (res.ok) {
           const data = await res.json();
           setProfile(data);
         }
-      } catch (_e) {
+      } catch (_) {
         // Erro ao buscar perfil
       }
     };
@@ -161,12 +162,14 @@ export default function Sidebar() {
             overflow: 'hidden',
           }}>
             {userPhoto ? (
-              <img 
-                src={userPhoto} 
-                alt={userName} 
-                style={{ 
-                  width: '100%', 
-                  height: '100%', 
+              <Image
+                src={userPhoto}
+                alt={userName}
+                width={40}
+                height={40}
+                style={{
+                  width: '100%',
+                  height: '100%',
                   objectFit: 'cover',
                 }}
               />

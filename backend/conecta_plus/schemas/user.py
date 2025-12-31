@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from pydantic import EmailStr, Field, field_validator
 
-from app.schemas.common import BaseSchema, PaginatedResponse, TimestampSchema
+from conecta_plus.schemas.common import BaseSchema, PaginatedResponse, TimestampSchema
 
 
 class UserBase(BaseSchema):

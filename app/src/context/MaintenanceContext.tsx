@@ -52,7 +52,7 @@ const INITIAL_TICKETS: Ticket[] = [
     },
     {
         id: '5', protocol: '56', title: 'Interfone mudo', type: 'Elétrica', status: 'concluido', unit: '205', createdBy: 'Maria', createdAt: '04/12/25 14:20',
-        description: 'Interfone não recebe chamadas da portaria.',
+        description: 'Interfone não está funcionando corretamente.',
         history: []
     }
 ];

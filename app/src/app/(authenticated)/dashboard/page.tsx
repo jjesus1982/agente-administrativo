@@ -1,5 +1,5 @@
 "use client";
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useRouter } from 'next/navigation';
 import { useAuth } from '@/context/AuthContext';
 import { useTenant } from '@/contexts/TenantContext';
@@ -36,7 +36,7 @@ export default function DashboardPage() {
   const [atividades, setAtividades] = useState<Atividade[]>([]);
   const [loading, setLoading] = useState(true);
 
-  const fetchData = async () => {
+  const fetchData = useCallback(async () => {
     setLoading(true);
     try {
       const tenantId = currentTenant?.tenant_id || 1;
@@ -101,23 +101,21 @@ export default function DashboardPage() {
       console.error('Dashboard unexpected error:', e);
     }
     setLoading(false);
-  };
+  }, [currentTenant]);
 
   // Recarrega quando tenant muda
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     fetchData();
     const interval = setInterval(fetchData, 30000);
     return () => clearInterval(interval);
-  }, [currentTenant]);
+  }, [fetchData]);
 
   // Escuta evento de mudança de tenant
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   useEffect(() => {
     const handleTenantChange = () => fetchData();
     window.addEventListener('tenantChanged', handleTenantChange);
     return () => window.removeEventListener('tenantChanged', handleTenantChange);
-  }, [currentTenant]);
+  }, [fetchData]);
 
   const formatBytes = (bytes: number) => {
     if (!bytes) return '0 B';

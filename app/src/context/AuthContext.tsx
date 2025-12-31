@@ -5,7 +5,6 @@ import { api } from '@/lib/api';
 export const ROLES = {
     RESIDENT: 1,
     SYNDIC: 2,
-    DOORMAN: 3,
     ADMIN: 4,
     SUPER_ADMIN: 5
 };
@@ -52,7 +51,6 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const roles: Record<number, string> = {
             1: 'Morador',
             2: 'Síndico',
-            3: 'Porteiro',
             4: 'Admin',
             5: 'Super Admin'
         };
@@ -60,16 +58,24 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     };
 
     const fetchUser = async () => {
+        console.log('🔍 AuthContext: Iniciando fetchUser');
         const token = localStorage.getItem('access_token');
+        console.log('🔑 Token encontrado:', token ? 'SIM' : 'NÃO');
+
         if (!token) {
+            console.log('❌ Nenhum token, setando loading=false');
             setLoading(false);
             return;
         }
 
         try {
-            const res = await api.get('/profile/me');
+            console.log('📤 AuthContext: Fazendo requisição para /auth/auth/me');
+            const res = await api.get('/auth/auth/me');
+            console.log('📥 AuthContext: Resposta recebida:', res.status);
+
             if (res.ok) {
                 const data = await res.json();
+                console.log('👤 AuthContext: Dados do usuário:', data);
                 setUser({
                     id: data.id,
                     name: data.name || data.full_name || 'Usuário',
@@ -80,15 +86,20 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
                     tenant_name: data.tenant_name || 'Condomínio',
                     photo_url: data.photo_url || data.avatar_url || null
                 });
+                console.log('✅ AuthContext: Usuário configurado com sucesso');
             } else if (res.status === 401) {
+                console.log('🔒 AuthContext: Token inválido (401), limpando localStorage');
                 localStorage.removeItem('access_token');
                 localStorage.removeItem('refresh_token');
                 setUser(null);
+            } else {
+                console.log('❌ AuthContext: Resposta não OK:', res.status);
             }
         } catch (err) {
-            console.error('Erro ao buscar usuário:', err);
+            console.error('💥 AuthContext: Erro ao buscar usuário:', err);
             setError('Erro ao carregar usuário');
         } finally {
+            console.log('🏁 AuthContext: Finalizando fetchUser (setLoading false)');
             setLoading(false);
         }
     };
@@ -99,7 +110,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
     const login = async (email: string, password: string): Promise<boolean> => {
         try {
-            const res = await api.post('/auth/login', { email, password }, { skipAuth: true });
+            const res = await api.post('/auth/auth/login', { email, password }, { skipAuth: true });
             if (res.ok) {
                 const data = await res.json();
                 localStorage.setItem('access_token', data.access_token);

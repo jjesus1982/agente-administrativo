@@ -2,8 +2,8 @@ from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, Numeric, 
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import relationship
 
-from app.database import Base
-from app.models.base import TenantMixin, TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import TenantMixin, TimestampMixin
 
 
 class MaintenanceTicket(Base, TenantMixin, TimestampMixin):

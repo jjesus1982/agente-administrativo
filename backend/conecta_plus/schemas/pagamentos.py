@@ -8,7 +8,7 @@ from typing import List, Optional
 
 from pydantic import Field
 
-from app.schemas.common import BaseSchema, PaginatedResponse, TimestampSchema
+from conecta_plus.schemas.common import BaseSchema, PaginatedResponse, TimestampSchema
 
 # ==================== CONSTANTES ====================
 

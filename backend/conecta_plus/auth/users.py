@@ -8,13 +8,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, status
 from sqlalchemy import func, or_, select
 from sqlalchemy.ext.asyncio import AsyncSession
 
-from app.api.deps import PaginationDep, get_current_tenant, get_current_user, get_db
-from app.core.exceptions import DuplicateError, NotFoundError
-from app.core.permissions import Role, get_role_name
-from app.core.security import get_password_hash
-from app.models.user import User
-from app.schemas.common import MessageResponse
-from app.schemas.user import UserCreate, UserListResponse, UserResponse, UserUpdate
+from conecta_plus.api.deps import PaginationDep, get_current_tenant, get_current_user, get_db
+from conecta_plus.core.exceptions import DuplicateError, NotFoundError
+from conecta_plus.core.permissions import Role, get_role_name
+from conecta_plus.core.security import get_password_hash
+from conecta_plus.models.user import User
+from conecta_plus.schemas.common import MessageResponse
+from conecta_plus.schemas.user import UserCreate, UserListResponse, UserResponse, UserUpdate
 
 router = APIRouter(prefix="/users", tags=["Usuários"])
 
@@ -329,7 +329,7 @@ async def get_public_users(
     """Lista usuários sem autenticação (para teste)"""
     from sqlalchemy import select
 
-    from app.models.user import User
+    from conecta_plus.models.user import User
 
     tenant_id = 1
 

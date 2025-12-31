@@ -28,7 +28,7 @@ export function useTenantData<T>(
       } else {
         setError('Erro ao carregar dados');
       }
-    } catch (_e) {
+    } catch (_) {
       setError('Erro de conexão');
     } finally {
       setLoading(false);

@@ -128,7 +128,7 @@ describe('API Configuration', () => {
         });
 
         const testData = { email: 'test@example.com', password: '123456' };
-        await api.post('/auth/login', testData);
+        await api.post('/auth/auth/login', testData);
 
         expect(global.fetch).toHaveBeenCalledWith(
           expect.any(String),

@@ -8,8 +8,8 @@ import hashlib
 import json
 from typing import Callable, Optional, Union
 
-from app.core.logger import get_logger
-from app.services.cache import cache, cache_key
+from conecta_plus.core.logger import get_logger
+from conecta_plus.services.cache import cache, cache_key
 
 logger = get_logger(__name__)
 

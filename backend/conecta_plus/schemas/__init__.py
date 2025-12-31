@@ -2,7 +2,7 @@
 Schemas do sistema Conecta Plus
 """
 
-from app.schemas.auth import (
+from conecta_plus.schemas.auth import (
     ChangePasswordRequest,
     LoginRequest,
     PasswordResetConfirm,
@@ -12,7 +12,7 @@ from app.schemas.auth import (
     TokenResponse,
     UserMeResponse,
 )
-from app.schemas.common import (
+from conecta_plus.schemas.common import (
     BaseSchema,
     CountResponse,
     ErrorResponse,
@@ -23,7 +23,7 @@ from app.schemas.common import (
     PaginationParams,
     TimestampSchema,
 )
-from app.schemas.entities import (
+from conecta_plus.schemas.entities import (
     AccessLogBase,
     AccessLogCreate,
     AccessLogListResponse,
@@ -51,7 +51,7 @@ from app.schemas.entities import (
     ReservationListResponse,
     ReservationResponse,
 )
-from app.schemas.unit import (
+from conecta_plus.schemas.unit import (
     ParkingSpotBase,
     ParkingSpotCreate,
     ParkingSpotListResponse,
@@ -68,8 +68,8 @@ from app.schemas.unit import (
     VehicleResponse,
     VehicleUpdate,
 )
-from app.schemas.user import UserBase, UserCreate, UserListResponse, UserResponse, UserSimple, UserUpdate
-from app.schemas.visitor import (
+from conecta_plus.schemas.user import UserBase, UserCreate, UserListResponse, UserResponse, UserSimple, UserUpdate
+from conecta_plus.schemas.visitor import (
     ActiveVisitorResponse,
     VisitorBase,
     VisitorBlockRequest,

@@ -15,8 +15,8 @@ from sqlalchemy import ForeignKey, Index, Integer, Numeric, String, Text
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import backref, relationship
 
-from app.database import Base
-from app.models.base import AuditMixin, SoftDeleteMixin, TenantMixin, TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import AuditMixin, SoftDeleteMixin, TenantMixin, TimestampMixin
 
 
 class BankAccount(Base, TenantMixin, TimestampMixin, AuditMixin, SoftDeleteMixin):

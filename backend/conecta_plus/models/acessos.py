@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import CheckConstraint, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
-from app.database import Base
+from conecta_plus.database import Base
 
 
 class AcessoSolicitacao(Base):

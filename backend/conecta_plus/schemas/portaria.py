@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional
 
 from pydantic import Field, field_validator
 
-from app.schemas.common import BaseSchema, PaginatedResponse
+from conecta_plus.schemas.common import BaseSchema, PaginatedResponse
 
 
 # =============================================================================

@@ -3,8 +3,8 @@
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
-from app.database import Base
-from app.models.base import TenantMixin, TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import TenantMixin, TimestampMixin
 
 
 class Device(Base, TimestampMixin, TenantMixin):

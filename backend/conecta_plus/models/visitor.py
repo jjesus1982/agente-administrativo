@@ -5,8 +5,8 @@ Model Visitor - Visitante, Prestador, Entregador
 from sqlalchemy import Boolean, Column, Date, ForeignKey, Index, Integer, String, Text
 from sqlalchemy.orm import relationship
 
-from app.database import Base
-from app.models.base import AuditMixin, TenantMixin, TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import AuditMixin, TenantMixin, TimestampMixin
 
 
 class Visitor(Base, TenantMixin, TimestampMixin, AuditMixin):

@@ -19,6 +19,8 @@ from conecta_plus.models.user import User
 
 router = APIRouter(prefix="/profile", tags=["Perfil"])
 
+# Diretório base para uploads
+UPLOAD_BASE_DIR = os.path.join(os.getcwd(), "uploads")
 UPLOAD_DIR = os.path.join(UPLOAD_BASE_DIR, "avatars")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
 security = HTTPBearer(auto_error=False)
@@ -157,7 +159,7 @@ async def change_password(
     db: AsyncSession = Depends(get_db),
 ):
     """Altera senha do usuário"""
-    from app.core.security import get_password_hash, verify_password
+    from conecta_plus.core.security import get_password_hash, verify_password
 
     user_id = token_user_id or 1
 

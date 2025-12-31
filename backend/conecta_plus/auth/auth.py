@@ -11,6 +11,7 @@ from sqlalchemy.ext.asyncio import AsyncSession
 from .deps import get_current_user, get_db
 from conecta_plus.core.permissions import get_role_name
 from conecta_plus.core.security import (
+    ACCESS_TOKEN_EXPIRE_MINUTES,
     create_access_token,
     create_refresh_token,
     get_password_hash,
@@ -62,7 +63,7 @@ async def login(data: LoginRequest, db: AsyncSession = Depends(get_db)):
         access_token=access_token,
         refresh_token=refresh_token,
         token_type="bearer",
-        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
 
@@ -94,7 +95,7 @@ async def refresh_token(data: RefreshTokenRequest, db: AsyncSession = Depends(ge
         access_token=access_token,
         refresh_token=data.refresh_token,  # Mantém o mesmo refresh token
         token_type="bearer",
-        expires_in=settings.ACCESS_TOKEN_EXPIRE_MINUTES * 60,
+        expires_in=ACCESS_TOKEN_EXPIRE_MINUTES * 60,
     )
 
 

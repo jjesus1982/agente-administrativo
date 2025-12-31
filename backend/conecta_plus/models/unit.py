@@ -5,8 +5,8 @@ Model Unit - Unidade do condomínio
 from sqlalchemy import Boolean, Column, Date, ForeignKey, Index, Integer, Numeric, String
 from sqlalchemy.orm import relationship
 
-from app.database import Base
-from app.models.base import TenantMixin, TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import TenantMixin, TimestampMixin
 
 
 class Unit(Base, TenantMixin, TimestampMixin):

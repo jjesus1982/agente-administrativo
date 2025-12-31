@@ -26,7 +26,9 @@ from conecta_plus.campo.api import router as campo_router
 from conecta_plus.knowledge.api import router as knowledge_router
 from conecta_plus.orchestrator.api import router as orchestrator_router
 from conecta_plus.network.api import router as network_router
-# from conecta_plus.auth.api import router as auth_router
+from conecta_plus.auth.api import router as auth_router
+from conecta_plus.dashboard.api import router as dashboard_router
+from conecta_plus.ia.api import router as ia_router
 
 # Configura logging
 logging.basicConfig(
@@ -130,7 +132,9 @@ app.add_middleware(
 # ROTAS DOS MÓDULOS
 # =============================================================================
 
-# app.include_router(auth_router, prefix="/api")
+app.include_router(auth_router, prefix="/api")
+app.include_router(dashboard_router, prefix="/api")
+app.include_router(ia_router, prefix="/api")
 app.include_router(agente_tecnico_router, prefix="/api")
 app.include_router(campo_router, prefix="/api")
 app.include_router(knowledge_router, prefix="/api")

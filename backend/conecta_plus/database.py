@@ -58,7 +58,7 @@ async def init_db():
     Inicializa o banco de dados criando as tabelas.
     NOTA: Em produção, use Alembic migrations ao invés deste método.
     """
-    from app.models import Base
+    from conecta_plus.models import Base
 
     async with engine.begin() as conn:
         await conn.run_sync(Base.metadata.create_all)

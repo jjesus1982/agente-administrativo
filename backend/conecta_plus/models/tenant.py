@@ -9,8 +9,8 @@ from sqlalchemy import Boolean, Column, DateTime, Date, Integer, String, Text, I
 from sqlalchemy.dialects.postgresql import JSONB, UUID
 from sqlalchemy.orm import relationship
 
-from app.database import Base
-from app.models.base import TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import TimestampMixin
 
 
 class Tenant(Base, TimestampMixin):
@@ -26,7 +26,7 @@ class Tenant(Base, TimestampMixin):
     # ══════════════════════════════════════════════════════════════
     # DADOS BÁSICOS
     # ══════════════════════════════════════════════════════════════
-    nome = Column(String(255), nullable=False)
+    name = Column(String(255), nullable=False)
     cnpj = Column(String(18), unique=True, index=True)
     endereco = Column(String(500))
     bairro = Column(String(100))

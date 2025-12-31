@@ -128,7 +128,7 @@ export default function ReservasPage() {
         const err = await res.json();
         alert(err.detail || 'Erro ao reservar');
       }
-    } catch (_e) { alert('Erro ao reservar'); }
+    } catch (_) { alert('Erro ao reservar'); }
   };
 
   const handleCancelar = async (reservaId: number) => {
@@ -144,7 +144,7 @@ export default function ReservasPage() {
           setDiasOcupados(data.dias_ocupados || {});
         }
       }
-    } catch (_e) { alert('Erro ao cancelar'); }
+    } catch (_) { alert('Erro ao cancelar'); }
   };
 
   const hoje = new Date();

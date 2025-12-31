@@ -17,39 +17,57 @@ export default function LoginPage() {
     setError('');
     setLoading(true);
 
+    console.log('🚀 INICIANDO LOGIN');
+    console.log('📧 Email:', email);
+    console.log('🌐 API_BASE:', API_BASE);
+    console.log('🔗 URL completa:', API_BASE + '/auth/auth/login');
+
     try {
-      const res = await fetch(API_BASE + '/auth/login', {
+      console.log('📤 Enviando requisição...');
+      const res = await fetch(API_BASE + '/auth/auth/login', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password })
       });
 
+      console.log('📥 Resposta recebida:', res.status, res.statusText);
+
       const data = await res.json();
+      console.log('📊 Dados da resposta:', data);
 
       if (res.ok) {
+        console.log('✅ Login bem-sucedido!');
+
         // Salvar tokens
         localStorage.setItem('access_token', data.access_token);
         localStorage.setItem('refresh_token', data.refresh_token);
+        console.log('💾 Tokens salvos no localStorage');
 
         // Extrair tenant_id do token JWT
         try {
           const tokenPayload = JSON.parse(atob(data.access_token.split('.')[1]));
+          console.log('🔓 Payload do token:', tokenPayload);
           if (tokenPayload.tenant_id) {
             localStorage.setItem('currentTenantId', tokenPayload.tenant_id.toString());
+            console.log('🏢 Tenant ID salvo:', tokenPayload.tenant_id);
           }
         } catch (error) {
-          console.error('Erro ao extrair tenant_id do token:', error);
+          console.error('❌ Erro ao extrair tenant_id do token:', error);
         }
 
         // Redirecionar para dashboard
+        console.log('🔄 Redirecionando para dashboard...');
         router.push('/dashboard');
+        console.log('✨ Push executado!');
       } else {
+        console.error('❌ Erro no login:', data);
         setError(data.detail || 'Email ou senha incorretos');
       }
     } catch (err) {
-      console.error(err);
+      console.error('💥 Erro de conexão:', err);
       setError('Erro ao conectar com o servidor');
     } finally {
+      console.log('🔚 Finalizando (setLoading false)');
       setLoading(false);
     }
   };
@@ -109,11 +127,10 @@ export default function LoginPage() {
                 color: 'var(--text-muted)'
               }} />
               <input
-                type="email"
+                type="text"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
                 placeholder="seu@email.com"
-                required
                 style={{
                   width: '100%',
                   padding: '0.75rem 1rem 0.75rem 2.75rem',
@@ -147,7 +164,6 @@ export default function LoginPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
                 placeholder="••••••••"
-                required
                 style={{
                   width: '100%',
                   padding: '0.75rem 2.75rem',

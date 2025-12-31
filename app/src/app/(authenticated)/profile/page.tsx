@@ -25,7 +25,6 @@ const getRoleConfig = (role: number): { name: string; color: string; bg: string;
   const configs: Record<number, { name: string; color: string; bg: string; icon: React.ReactNode; description: string }> = {
     1: defaultConfig,
     2: { name: 'Síndico', color: '#f59e0b', bg: '#f59e0b20', icon: <Briefcase size={16}/>, description: 'Administração geral do condomínio' },
-    3: { name: 'Porteiro', color: '#22c55e', bg: '#22c55e20', icon: <Shield size={16}/>, description: 'Controle de acesso e portaria' },
     4: { name: 'Administrador', color: '#ef4444', bg: '#ef444420', icon: <Settings size={16}/>, description: 'Administração do sistema' },
     5: { name: 'Super Admin', color: '#8b5cf6', bg: '#8b5cf620', icon: <Shield size={16}/>, description: 'Acesso total ao sistema' },
     9: { name: 'Agente AGP', color: '#06b6d4', bg: '#06b6d420', icon: <Building2 size={16}/>, description: 'Agente da Administradora Global' },
@@ -49,7 +48,7 @@ export default function ProfilePage() {
 
   const fetchProfile = async () => {
     try {
-      const res = await fetch(`${API_BASE}/profile/me?tenant_id=${currentTenant?.tenant_id}`);
+      const res = await fetch(`${API_BASE}/auth/auth/me?tenant_id=${currentTenant?.tenant_id}`);
       const data = await res.json();
       setProfile(data);
       setForm(data);
@@ -60,7 +59,7 @@ export default function ProfilePage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      const res = await fetch(`${API_BASE}/profile/me`, {
+      const res = await fetch(`${API_BASE}/auth/auth/me`, {
         method: 'PUT',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ name: form.name, email: form.email, phone: form.phone, phone_secondary: form.phone_secondary, birth_date: form.birth_date, gender: form.gender, cpf: form.cpf, rg: form.rg })

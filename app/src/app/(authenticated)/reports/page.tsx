@@ -60,7 +60,6 @@ const reportCategories: ReportCategory[] = [
       { icon: Calendar, label: 'Reservas', path: '/reports/reservations' },
       { icon: Package, label: 'Encomendas', path: '/reports/packages' },
       { icon: Key, label: 'Histórico de chaves', path: '/reports/keys' },
-      { icon: BookOpen, label: 'Livro da portaria', path: '/reports/logbook' },
       { icon: Box, label: 'Controle de Ativos', path: '/reports/assets' },
       { icon: HardDrive, label: 'Obras', path: '/reports/works' },
       { icon: Search, label: 'Achados e perdidos', path: '/reports/lost-found' },

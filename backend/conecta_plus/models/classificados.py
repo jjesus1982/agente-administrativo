@@ -2,7 +2,7 @@ from sqlalchemy import Column, DateTime, ForeignKey, Integer, Numeric, String, T
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.database import Base
+from conecta_plus.database import Base
 
 
 class ClassificadoAnuncio(Base):

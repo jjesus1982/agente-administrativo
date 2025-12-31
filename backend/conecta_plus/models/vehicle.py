@@ -5,8 +5,8 @@ Model Vehicle - Veículos de moradores
 from sqlalchemy import Boolean, Column, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import relationship
 
-from app.database import Base
-from app.models.base import AuditMixin, TenantMixin, TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import AuditMixin, TenantMixin, TimestampMixin
 
 
 class Vehicle(Base, TenantMixin, TimestampMixin, AuditMixin):

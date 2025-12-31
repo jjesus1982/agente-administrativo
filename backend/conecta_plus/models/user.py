@@ -5,8 +5,8 @@ Model User - Usuário do sistema
 from sqlalchemy import Boolean, Column, Date, DateTime, ForeignKey, Index, Integer, String
 from sqlalchemy.orm import relationship
 
-from app.database import Base
-from app.models.base import SoftDeleteMixin, TenantMixin, TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import SoftDeleteMixin, TenantMixin, TimestampMixin
 
 
 class User(Base, TenantMixin, TimestampMixin, SoftDeleteMixin):

@@ -6,8 +6,8 @@ from sqlalchemy import Column, DateTime, ForeignKey, Index, Integer, String, Tex
 from sqlalchemy.orm import relationship
 from sqlalchemy.sql import func
 
-from app.database import Base
-from app.models.base import TenantMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import TenantMixin
 
 
 class AccessLog(Base, TenantMixin):

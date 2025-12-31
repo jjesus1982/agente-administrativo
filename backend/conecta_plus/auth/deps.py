@@ -126,3 +126,29 @@ class DateFilterDep:
     ):
         self.start_date = start_date
         self.end_date = end_date
+
+
+async def verify_tenant_access(
+    tenant_id: int = Query(..., description="ID do tenant"),
+    current_user: User = Depends(get_current_user),
+    db: AsyncSession = Depends(get_db)
+) -> Tenant:
+    """Dependency para verificar acesso ao tenant"""
+    # Verifica se o tenant existe
+    result = await db.execute(select(Tenant).where(Tenant.id == tenant_id))
+    tenant = result.scalar_one_or_none()
+
+    if tenant is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="Tenant não encontrado"
+        )
+
+    # Verifica se o usuário tem acesso ao tenant
+    if current_user.tenant_id != tenant_id:
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail="Acesso negado ao tenant"
+        )
+
+    return tenant

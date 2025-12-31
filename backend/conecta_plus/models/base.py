@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, Column, DateTime, ForeignKey, Integer, String, func
 from sqlalchemy.orm import declared_attr, relationship, Session
 
-from app.database import Base
+from conecta_plus.database import Base
 
 
 class TimestampMixin:

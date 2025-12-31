@@ -9,8 +9,8 @@ from typing import Any, Optional, Union
 import redis.asyncio as redis
 from redis.asyncio.connection import ConnectionPool
 
-from app.config import settings
-from app.core.logger import get_logger
+from conecta_plus.config import settings
+from conecta_plus.core.logger import get_logger
 
 logger = get_logger(__name__)
 

@@ -8,7 +8,7 @@ from typing import Any, Optional
 
 import structlog
 
-from app.config import settings
+from conecta_plus.config import settings
 
 
 def configure_logging():

@@ -57,7 +57,7 @@ export function TenantProvider({ children }: { children: ReactNode }) {
         const selected = savedTenant || primaryTenant || null;
         setCurrentTenant(selected);
       }
-    } catch (_e) {
+    } catch (_) {
       // Erro ao carregar tenants
     } finally {
       setIsLoading(false);

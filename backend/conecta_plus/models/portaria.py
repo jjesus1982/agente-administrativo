@@ -18,8 +18,8 @@ from sqlalchemy import (
 from sqlalchemy.dialects.postgresql import ARRAY, JSONB
 from sqlalchemy.orm import relationship
 
-from app.database import Base
-from app.models.base import AuditMixin, TenantMixin, TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import AuditMixin, TenantMixin, TimestampMixin
 
 
 class GrupoAcesso(Base, TenantMixin, TimestampMixin, AuditMixin):

@@ -8,7 +8,7 @@ from typing import Dict, List, Set
 
 from fastapi import WebSocket
 
-from app.core.logger import get_logger
+from conecta_plus.core.logger import get_logger
 
 logger = get_logger(__name__)
 

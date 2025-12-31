@@ -10,9 +10,9 @@ from datetime import datetime
 import httpx
 from fastapi import HTTPException
 
-from app.config import settings
-from app.models.tenant import Tenant
-from app.core.logger import get_logger
+from conecta_plus.config import settings
+from conecta_plus.models.tenant import Tenant
+from conecta_plus.core.logger import get_logger
 
 logger = get_logger(__name__)
 

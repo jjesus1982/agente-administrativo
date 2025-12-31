@@ -2,7 +2,7 @@
 import React, { useState, useEffect } from 'react';
 import { useTenant } from '@/contexts/TenantContext';
 import { Megaphone, Plus, Pin, Eye, MessageSquare, Clock, Trash2, Send, Search, Users, Bell, Mail } from 'lucide-react';
-import { Card, Button, Badge, EmptyState, Modal, StatCard } from '@/components/ui';
+import { Card, Button, Badge, BadgeVariant, EmptyState, Modal, StatCard } from '@/components/ui';
 import { API_BASE } from '@/lib/api';
 
 const CATEGORIAS = [
@@ -22,7 +22,7 @@ const PRIORIDADES = [
   { value: 'urgente', label: 'Urgente', color: 'error' },
 ] as const;
 
-type PrioridadeInfo = { value: string; label: string; color: string };
+type PrioridadeInfo = { value: string; label: string; color: BadgeVariant };
 
 interface Anuncio {
   id: number; title: string; content: string; summary?: string; category?: string;
@@ -85,7 +85,10 @@ export default function AnnouncementsPage() {
       setCreateModal(false);
       setForm({ title: '', content: '', summary: '', category: 'geral', priority: 'normal', is_pinned: false, target_audience: 'todos', send_push: false, send_email: false, allow_comments: true });
       fetchAnuncios();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: unknown) {
+      const error = e as Error;
+      alert(error.message || 'Erro ao processar solicitação');
+    }
     setSubmitting(false);
   };
 
@@ -95,14 +98,20 @@ export default function AnnouncementsPage() {
       await fetch(`${API_BASE}/anuncios/${deleteConfirm.id}?tenant_id=${currentTenant?.tenant_id}`, { method: 'DELETE' });
       setDeleteConfirm(null);
       fetchAnuncios();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: unknown) {
+      const error = e as Error;
+      alert(error.message || 'Erro ao processar solicitação');
+    }
   };
 
   const handleTogglePin = async (id: number) => {
     try {
       await fetch(`${API_BASE}/anuncios/${id}/fixar?tenant_id=${currentTenant?.tenant_id}`, { method: 'PUT' });
       fetchAnuncios();
-    } catch (e: any) { alert(e.message); }
+    } catch (e: unknown) {
+      const error = e as Error;
+      alert(error.message || 'Erro ao processar solicitação');
+    }
   };
 
   const handleAddComment = async () => {
@@ -115,7 +124,10 @@ export default function AnnouncementsPage() {
       if (!res.ok) throw new Error('Erro');
       setNovoComentario('');
       fetchComentarios(viewModal.id);
-    } catch (e: any) { alert(e.message); }
+    } catch (e: unknown) {
+      const error = e as Error;
+      alert(error.message || 'Erro ao processar solicitação');
+    }
   };
 
   const openView = async (anuncio: Anuncio) => {
@@ -181,7 +193,7 @@ export default function AnnouncementsPage() {
                 <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => openView(anuncio)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
                     <Pin size={14} style={{ color: 'var(--warning)' }}/>
-                    <Badge variant={getPrioInfo(anuncio.priority).color as any} size="sm">{getPrioInfo(anuncio.priority).label}</Badge>
+                    <Badge variant={getPrioInfo(anuncio.priority).color} size="sm">{getPrioInfo(anuncio.priority).label}</Badge>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{getCatLabel(anuncio.category)}</span>
                   </div>
                   <h3 style={{ fontWeight: 600, fontSize: '1.05rem', marginBottom: '0.25rem' }}>{anuncio.title}</h3>
@@ -207,7 +219,7 @@ export default function AnnouncementsPage() {
               <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start' }}>
                 <div style={{ flex: 1, cursor: 'pointer' }} onClick={() => openView(anuncio)}>
                   <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem', flexWrap: 'wrap' }}>
-                    <Badge variant={getPrioInfo(anuncio.priority).color as any} size="sm">{getPrioInfo(anuncio.priority).label}</Badge>
+                    <Badge variant={getPrioInfo(anuncio.priority).color} size="sm">{getPrioInfo(anuncio.priority).label}</Badge>
                     <span style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>{getCatLabel(anuncio.category)}</span>
                   </div>
                   <h3 style={{ fontWeight: 600, fontSize: '1.05rem', marginBottom: '0.25rem' }}>{anuncio.title}</h3>
@@ -305,7 +317,7 @@ export default function AnnouncementsPage() {
           <div style={{ display: 'flex', flexDirection: 'column', gap: '1rem' }}>
             <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
               {viewModal.is_pinned && <Badge variant="warning" size="sm"><Pin size={10}/> Fixado</Badge>}
-              <Badge variant={getPrioInfo(viewModal.priority).color as any} size="sm">{getPrioInfo(viewModal.priority).label}</Badge>
+              <Badge variant={getPrioInfo(viewModal.priority).color} size="sm">{getPrioInfo(viewModal.priority).label}</Badge>
               <Badge variant="default" size="sm">{getCatLabel(viewModal.category)}</Badge>
             </div>
             
@@ -356,7 +368,7 @@ export default function AnnouncementsPage() {
       {/* Modal Confirmar Delete */}
       <Modal isOpen={!!deleteConfirm} onClose={() => setDeleteConfirm(null)} title="Confirmar Exclusão" size="sm"
         footer={<><Button variant="ghost" onClick={() => setDeleteConfirm(null)}>Cancelar</Button><Button onClick={handleDelete} style={{ background: 'var(--error)' }}>Excluir</Button></>}>
-        <p>Tem certeza que deseja excluir o comunicado <strong>"{deleteConfirm?.title}"</strong>?</p>
+        <p>Tem certeza que deseja excluir o comunicado <strong>&quot;{deleteConfirm?.title}&quot;</strong>?</p>
         <p style={{ color: 'var(--text-muted)', fontSize: '0.9rem', marginTop: '0.5rem' }}>Esta ação não pode ser desfeita.</p>
       </Modal>
     </div>

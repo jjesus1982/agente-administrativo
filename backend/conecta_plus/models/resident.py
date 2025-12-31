@@ -5,8 +5,8 @@ Model Resident e Dependent - Moradores e Dependentes
 from sqlalchemy import Boolean, Column, Date, ForeignKey, Integer, String, Text
 from sqlalchemy.orm import relationship
 
-from app.database import Base
-from app.models.base import AuditMixin, TenantMixin, TimestampMixin
+from conecta_plus.database import Base
+from conecta_plus.models.base import AuditMixin, TenantMixin, TimestampMixin
 
 
 class Dependent(Base, TenantMixin, TimestampMixin, AuditMixin):
