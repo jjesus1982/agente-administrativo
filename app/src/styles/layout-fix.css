@@ -1,0 +1,355 @@
+/* 🧭 CORREÇÃO DE FLEX/GRID GLOBAIS QUEBRADOS */
+/* Identifica e corrige layouts que foram aplicados globalmente */
+
+/* ===== DIAGNÓSTICO DE PROBLEMAS COMUNS ===== */
+
+/*
+❌ PROBLEMAS IDENTIFICADOS NO PROJETO:
+
+1. body/html com display: flex aplicado globalmente
+2. Containers main/section com grid/flex herdado
+3. Elementos com flex: 1 aplicado sem contexto flex
+4. Grid template aplicado em elementos que não deveriam ter
+5. Position sticky/fixed quebrado por contain: layout
+*/
+
+/* ===== RESET DE BODY/HTML LAYOUT ===== */
+
+/* Forçar body e html para display natural */
+html {
+  display: block !important;
+  /* Reset de flex/grid que pode ter sido aplicado */
+  flex: none !important;
+  grid: none !important;
+  /* Reset de height forçada */
+  height: auto !important;
+  min-height: 100vh;
+}
+
+body {
+  display: block !important;
+  /* Reset de flex/grid que pode ter sido aplicado */
+  flex: none !important;
+  grid: none !important;
+  /* Reset de height forçada */
+  height: auto !important;
+  min-height: 100vh;
+  /* Reset de overflow problemático */
+  overflow: auto !important;
+}
+
+/* ===== RESET DE CONTAINERS PRINCIPAIS ===== */
+
+/* Reset de main element */
+main {
+  display: block !important;
+  flex: none !important;
+  grid: none !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Reset de section elements */
+section {
+  display: block !important;
+  flex: none !important;
+  grid: none !important;
+}
+
+/* Reset de article/aside */
+article,
+aside {
+  display: block !important;
+  flex: none !important;
+  grid: none !important;
+}
+
+/* Reset de header/footer */
+header,
+footer {
+  display: block !important;
+  flex: none !important;
+  grid: none !important;
+}
+
+/* Reset de nav */
+nav {
+  display: block !important;
+  flex: none !important;
+  grid: none !important;
+}
+
+/* ===== RESET DE WRAPPERS COMUNS ===== */
+
+/* Reset de divs que podem ter layout aplicado */
+div.container,
+div.wrapper,
+div.layout,
+div.page {
+  display: block !important;
+  flex: none !important;
+  grid: none !important;
+  width: auto !important;
+  height: auto !important;
+}
+
+/* Reset de Next.js containers */
+#__next,
+#root {
+  display: block !important;
+  flex: none !important;
+  grid: none !important;
+  min-height: 100vh;
+  width: 100%;
+}
+
+/* ===== RESET DE FLEX PROPERTIES ÓRFÃS ===== */
+
+/* Remove flex properties de elementos que não estão em container flex */
+* {
+  /* Reset de flex properties */
+  flex: initial !important;
+  flex-grow: 0 !important;
+  flex-shrink: 1 !important;
+  flex-basis: auto !important;
+
+  /* Reset de align/justify que só funcionam em flex/grid */
+  align-self: auto !important;
+  justify-self: auto !important;
+
+  /* Reset de order */
+  order: 0 !important;
+}
+
+/* ===== RESET DE GRID PROPERTIES ÓRFÃS ===== */
+
+/* Remove grid properties de elementos que não estão em container grid */
+* {
+  /* Reset de grid properties */
+  grid-area: auto !important;
+  grid-column: auto !important;
+  grid-row: auto !important;
+  grid-column-start: auto !important;
+  grid-column-end: auto !important;
+  grid-row-start: auto !important;
+  grid-row-end: auto !important;
+}
+
+/* ===== CORREÇÃO DE FLEX CONTAINERS VÁLIDOS ===== */
+
+/* Quando REALMENTE precisar de flex, aplicar de forma controlada */
+
+/* Flex container controlado */
+.controlled-flex {
+  display: flex;
+  /* Defaults seguros */
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+  gap: 0;
+}
+
+/* Flex items controlados */
+.controlled-flex > * {
+  /* Reset properties órfãs */
+  flex: 0 1 auto; /* grow: 0, shrink: 1, basis: auto */
+  align-self: auto;
+  order: 0;
+}
+
+/* ===== CORREÇÃO DE GRID CONTAINERS VÁLIDOS ===== */
+
+/* Grid container controlado */
+.controlled-grid {
+  display: grid;
+  /* Template mínimo */
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+  gap: 0;
+  /* Alignment padrão */
+  align-items: start;
+  justify-items: start;
+}
+
+/* Grid items controlados */
+.controlled-grid > * {
+  /* Reset properties órfãs */
+  grid-area: auto;
+  align-self: auto;
+  justify-self: auto;
+}
+
+/* ===== CORREÇÃO DE POSITION QUEBRADO ===== */
+
+/* Reset de position que pode ter quebrado por layout changes */
+* {
+  /* Reset de position problemática */
+  position: static;
+  top: auto;
+  right: auto;
+  bottom: auto;
+  left: auto;
+  z-index: auto;
+}
+
+/* Restaurar position quando necessário */
+.needs-relative {
+  position: relative;
+}
+
+.needs-absolute {
+  position: absolute;
+}
+
+.needs-fixed {
+  position: fixed;
+}
+
+.needs-sticky {
+  position: sticky;
+}
+
+/* ===== CORREÇÃO DE OVERFLOW QUEBRADO ===== */
+
+/* Reset de overflow que pode ter quebrado scroll */
+* {
+  overflow: visible;
+  overflow-x: visible;
+  overflow-y: visible;
+}
+
+/* Aplicar overflow quando necessário */
+.needs-scroll {
+  overflow: auto;
+}
+
+.needs-hidden {
+  overflow: hidden;
+}
+
+.needs-scroll-x {
+  overflow-x: auto;
+  overflow-y: visible;
+}
+
+.needs-scroll-y {
+  overflow-x: visible;
+  overflow-y: auto;
+}
+
+/* ===== CORREÇÃO DE TAMANHOS QUEBRADOS ===== */
+
+/* Reset de width/height que podem ter quebrado por layout */
+* {
+  width: auto;
+  height: auto;
+  min-width: 0;
+  min-height: 0;
+  max-width: none;
+  max-height: none;
+}
+
+/* Aplicar tamanhos quando necessário */
+.needs-full-width {
+  width: 100%;
+}
+
+.needs-full-height {
+  height: 100%;
+}
+
+.needs-viewport-height {
+  min-height: 100vh;
+}
+
+/* ===== UTILIDADES DE DIAGNÓSTICO ===== */
+
+/* Para identificar elementos com layout problemático */
+.diagnose-layout {
+  outline: 2px solid red !important;
+}
+
+.diagnose-layout[style*="flex"] {
+  outline-color: orange !important;
+}
+
+.diagnose-layout[style*="grid"] {
+  outline-color: purple !important;
+}
+
+/* Para destacar elementos com properties órfãs */
+*[style*="flex:"] {
+  background: rgba(255, 0, 0, 0.1) !important;
+}
+
+*[style*="grid-"] {
+  background: rgba(255, 0, 255, 0.1) !important;
+}
+
+/* ===== SCRIPT DE DIAGNÓSTICO JAVASCRIPT ===== */
+/*
+Para usar no DevTools console:
+
+// Encontrar elementos com flex órfão
+document.querySelectorAll('*').forEach(el => {
+  const style = window.getComputedStyle(el);
+  if (style.flex !== 'none' && style.flex !== '0 1 auto') {
+    const parent = el.parentElement;
+    const parentStyle = window.getComputedStyle(parent);
+    if (parentStyle.display !== 'flex') {
+      console.log('Flex órfão:', el);
+    }
+  }
+});
+
+// Encontrar elementos com grid órfão
+document.querySelectorAll('*').forEach(el => {
+  const style = window.getComputedStyle(el);
+  if (style.gridArea !== 'auto') {
+    const parent = el.parentElement;
+    const parentStyle = window.getComputedStyle(parent);
+    if (parentStyle.display !== 'grid') {
+      console.log('Grid órfão:', el);
+    }
+  }
+});
+
+// Encontrar elementos com position problemática
+document.querySelectorAll('*').forEach(el => {
+  const style = window.getComputedStyle(el);
+  if (style.position === 'absolute' || style.position === 'fixed') {
+    if (!el.closest('[style*="position: relative"]')) {
+      console.log('Position órfã:', el);
+    }
+  }
+});
+*/
+
+/* ===== IMPLEMENTAÇÃO POR ETAPAS ===== */
+/*
+🎯 IMPLEMENTAR NESTA ORDEM:
+
+1. Aplicar reset geral (primeira parte do arquivo)
+2. Identificar elementos quebrados usando diagnóstico
+3. Aplicar classes controladoras (.controlled-flex, .controlled-grid)
+4. Testar cada página individualmente
+5. Refinar com classes específicas (.needs-*)
+6. Remover diagnóstico antes de produção
+
+⚠️ CUIDADOS:
+
+- Aplicar !important apenas temporariamente
+- Testar responsividade após aplicação
+- Verificar se position: fixed ainda funciona
+- Confirmar se scroll funciona em todas direções
+
+✅ VALIDAÇÃO:
+
+Após aplicar, verificar:
+- Todas as páginas ainda carregam
+- Scroll funciona vertical e horizontalmente
+- Elementos fixos (header, sidebar) funcionam
+- Mobile responsiveness não quebrou
+- Performance não degradou
+*/

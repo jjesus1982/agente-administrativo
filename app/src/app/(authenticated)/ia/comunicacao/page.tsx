@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTenant } from '@/contexts/TenantContext';
 import {
   MessageSquare, Mail, Smartphone, Phone, MessageCircle,
-  Clock, Settings, RefreshCw, Target, Bell, BellOff, Filter
+  Clock, Settings, RefreshCw, Target, Bell, BellOff, Filter, BarChart3
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui';
 import { getEstatisticasComunicacao, getPreferenciasUsuarios, otimizarComunicacao } from '@/lib/iaApi';

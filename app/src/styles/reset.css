@@ -1,0 +1,202 @@
+/* 🧨 RESET CONTROLADO 2025 - AGENTE ADMINISTRATIVO */
+/* Frontend Reset seguro que não quebra funcionalidades existentes */
+
+/* ===== RESET FOUNDATION ===== */
+/* Apenas essenciais, sem overrides agressivos */
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+/* Reset apenas margens/padding problemáticos */
+* {
+  margin: 0;
+  padding: 0;
+}
+
+/* ===== DOCUMENT & ROOT ===== */
+html {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  scroll-behavior: smooth;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+  text-rendering: optimizeLegibility;
+  /* NÃO forçar overflow-x: hidden - pode quebrar layouts */
+}
+
+body {
+  line-height: 1.5;
+  font-weight: 400;
+  /* NÃO definir height/width específicas */
+  /* NÃO definir overflow - deixar natural */
+}
+
+/* ===== ELEMENTS RESET ===== */
+/* Resetar apenas elementos que causam problemas */
+
+/* Remover estilos padrão de listas */
+ul, ol {
+  list-style: none;
+}
+
+/* Botões com comportamento previsível */
+button, input, optgroup, select, textarea {
+  font-family: inherit;
+  font-size: 100%;
+  margin: 0;
+}
+
+button {
+  background: none;
+  border: none;
+  cursor: pointer;
+}
+
+/* Links sem estilos forçados */
+a {
+  text-decoration: none;
+  color: inherit; /* NÃO forçar cor específica */
+}
+
+/* Imagens responsivas por padrão */
+img, picture, video, canvas, svg {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+/* Tabelas com border-collapse consistente */
+table {
+  border-collapse: collapse;
+  border-spacing: 0;
+}
+
+/* ===== FORM ELEMENTS ===== */
+/* Reset de forms sem quebrar funcionalidades */
+
+fieldset {
+  border: none;
+  padding: 0;
+  margin: 0;
+  min-width: 0;
+}
+
+legend {
+  padding: 0;
+}
+
+/* ===== ACCESSIBILITY ===== */
+/* Manter acessibilidade intacta */
+
+/* Foco visível para navegação por teclado */
+:focus {
+  outline: 2px solid transparent;
+  outline-offset: 2px;
+}
+
+/* Respeitar preferências do usuário */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ===== PRINT SUPPORT ===== */
+@media print {
+  * {
+    background: transparent !important;
+    color: black !important;
+    box-shadow: none !important;
+    text-shadow: none !important;
+  }
+}
+
+/* ===== SCROLLBAR BASE ===== */
+/* Scrollbar consistente mas não forçada */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+::-webkit-scrollbar-thumb {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 4px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(0, 0, 0, 0.3);
+}
+
+/* ===== TYPOGRAPHY FOUNDATION ===== */
+/* Base typography sem fluid scales complexas */
+
+h1, h2, h3, h4, h5, h6 {
+  font-weight: inherit;
+  line-height: 1.2;
+}
+
+p {
+  line-height: 1.6;
+}
+
+/* ===== LAYOUT RESET ===== */
+/* Reset de layouts globais problemáticos */
+
+/* NÃO definir display: flex no body */
+/* NÃO definir height: 100vh globalmente */
+/* NÃO definir overflow: hidden globalmente */
+
+/* Container raiz para isolamento */
+#__next,
+#root,
+.app-root {
+  min-height: 100vh;
+  /* Deixar display como block natural */
+}
+
+/* ===== FORM VALIDATION ===== */
+/* Reset de validação de forms */
+
+input:invalid {
+  box-shadow: none;
+}
+
+/* Remove outline padrão do Chrome em forms */
+input:focus,
+select:focus,
+textarea:focus,
+button:focus {
+  outline: none;
+  /* Deixar para o design system definir focus */
+}
+
+/* ===== CSS CUSTOM PROPERTIES CLEANUP ===== */
+/* Não definir custom properties aqui - deixar para design system */
+
+/* ===== FINAL NOTES ===== */
+/*
+✅ O que este reset FAZ:
+- Remove margins/padding problemáticos
+- Corrige box-sizing
+- Define tipografia base consistente
+- Mantém acessibilidade
+- Reset de forms e elementos
+
+❌ O que este reset NÃO FAZ:
+- Não força overflow: hidden
+- Não define cores específicas
+- Não força display: flex
+- Não define custom properties
+- Não quebra layouts existentes
+*/

@@ -32,8 +32,14 @@ export default function LoginPage() {
 
       console.log('📥 Resposta recebida:', res.status, res.statusText);
 
-      const data = await res.json();
-      console.log('📊 Dados da resposta:', data);
+      let data = {};
+      try {
+        data = await res.json();
+        console.log('📊 Dados da resposta:', data);
+      } catch (jsonError) {
+        console.error('❌ Erro ao parsear JSON:', jsonError);
+        data = { detail: 'Erro de comunicação com o servidor' };
+      }
 
       if (res.ok) {
         console.log('✅ Login bem-sucedido!');
@@ -61,7 +67,21 @@ export default function LoginPage() {
         console.log('✨ Push executado!');
       } else {
         console.error('❌ Erro no login:', data);
-        setError(data.detail || 'Email ou senha incorretos');
+
+        // Tratamento mais detalhado de erros
+        let errorMessage = 'Email ou senha incorretos';
+
+        if (data.detail) {
+          errorMessage = data.detail;
+        } else if (res.status === 422) {
+          errorMessage = 'Dados inválidos. Verifique email e senha (min. 6 caracteres)';
+        } else if (res.status === 401) {
+          errorMessage = 'Email ou senha incorretos';
+        } else if (res.status >= 500) {
+          errorMessage = 'Erro interno do servidor. Tente novamente.';
+        }
+
+        setError(errorMessage);
       }
     } catch (err) {
       console.error('💥 Erro de conexão:', err);
@@ -104,7 +124,7 @@ export default function LoginPage() {
             <Building2 size={32} color="white" />
           </div>
           <h1 style={{ fontSize: '1.5rem', fontWeight: 700, marginBottom: '0.5rem' }}>
-            Agente Administrativo
+            agente administrativo
           </h1>
           <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>
             Sistema de Gestão de Condomínios

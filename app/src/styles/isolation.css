@@ -1,0 +1,287 @@
+/* 📦 SISTEMA DE ISOLAMENTO DE LAYOUT BASE */
+/* Cria containers seguros para isolar layout global de componentes */
+
+/* ===== CONTAINER RAIZ ===== */
+/* Container principal que isola toda a aplicação */
+
+.app-root {
+  /* Isolamento visual */
+  contain: layout style paint;
+
+  /* Layout foundation */
+  min-height: 100vh;
+  width: 100%;
+
+  /* Display natural - não flex/grid forçado */
+  display: block;
+
+  /* Position context */
+  position: relative;
+  z-index: 0;
+
+  /* Typography context */
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  line-height: 1.5;
+
+  /* Scroll behavior */
+  overflow-x: auto; /* Permite scroll horizontal se necessário */
+  overflow-y: auto; /* Permite scroll vertical natural */
+}
+
+/* ===== LAYOUT ISOLATION ZONES ===== */
+/* Diferentes zonas de isolamento para diferentes necessidades */
+
+/* Zona 1: Layout Application (main app) */
+.layout-zone {
+  /* Isolamento completo */
+  all: unset;
+
+  /* Rebuild foundation */
+  display: block;
+  font-family: inherit;
+  line-height: inherit;
+  color: inherit;
+
+  /* Contexto próprio */
+  position: relative;
+  z-index: 1;
+}
+
+/* Zona 2: Component Isolation (componentes individuais) */
+.component-zone {
+  /* Isolamento de estilos sem quebrar herança útil */
+  contain: style;
+
+  /* Layout próprio */
+  display: block;
+  position: relative;
+
+  /* Reset de margins/paddings herdados */
+  margin: 0;
+  padding: 0;
+
+  /* Box model previsível */
+  box-sizing: border-box;
+}
+
+/* Zona 3: Content Isolation (conteúdo de páginas) */
+.content-zone {
+  /* Isolamento moderado */
+  contain: layout;
+
+  /* Typography herdada */
+  font: inherit;
+  color: inherit;
+  line-height: inherit;
+
+  /* Layout natural */
+  display: block;
+}
+
+/* ===== SAFE CONTAINER PATTERNS ===== */
+
+/* Container para layout principal com safety */
+.safe-layout-container {
+  /* Box model seguro */
+  box-sizing: border-box;
+
+  /* Largura controlada */
+  width: 100%;
+  max-width: 100%;
+
+  /* Altura natural */
+  min-height: 0; /* Permite shrinking */
+
+  /* Overflow controlado */
+  overflow: visible; /* Permite conteúdo vazar se necessário */
+
+  /* Position segura */
+  position: relative;
+}
+
+/* Container para componentes com boundary */
+.safe-component-boundary {
+  /* Isola eventos de layout */
+  contain: layout style;
+
+  /* Position context próprio */
+  position: relative;
+  z-index: auto;
+
+  /* Display natural */
+  display: block;
+
+  /* Margins zerados */
+  margin: 0;
+}
+
+/* ===== FLEX/GRID SAFE CONTAINERS ===== */
+/* Containers seguros para quando PRECISAR de flex/grid */
+
+.safe-flex-container {
+  /* Aplicar flex apenas quando explicitamente necessário */
+  display: flex;
+
+  /* Defaults seguros */
+  flex-direction: row;
+  flex-wrap: nowrap;
+  align-items: stretch;
+  justify-content: flex-start;
+
+  /* Gap controlado */
+  gap: 0;
+
+  /* Tamanhos naturais */
+  width: 100%;
+  height: auto;
+}
+
+.safe-grid-container {
+  /* Aplicar grid apenas quando explicitamente necessário */
+  display: grid;
+
+  /* Template mínimo */
+  grid-template-columns: 1fr;
+  grid-template-rows: auto;
+
+  /* Gap controlado */
+  gap: 0;
+
+  /* Alignment natural */
+  align-items: start;
+  justify-items: start;
+}
+
+/* ===== BREAKOUT UTILITIES ===== */
+/* Para quando componentes precisam "quebrar" o isolamento */
+
+.breakout-full {
+  /* Quebra isolamento horizontal */
+  width: 100vw;
+  margin-left: 50%;
+  transform: translateX(-50%);
+}
+
+.breakout-wide {
+  /* Quebra isolamento moderado */
+  width: calc(100% + 2rem);
+  margin-left: -1rem;
+}
+
+/* ===== RESET INHERITANCE CHAIN ===== */
+/* Para quebrar herança específica quando necessário */
+
+.reset-inheritance {
+  /* Reset total exceto o que queremos manter */
+  all: unset;
+
+  /* Rebuild apenas o essencial */
+  display: block;
+  box-sizing: border-box;
+  font-family: inherit;
+  color: inherit;
+}
+
+/* ===== SAFETY OVERRIDES ===== */
+/* Overrides de segurança para casos extremos */
+
+/* Força display natural em elementos que podem ter herdado flex/grid */
+.force-block {
+  display: block !important;
+  flex: none !important;
+  grid-area: unset !important;
+}
+
+/* Força position natural */
+.force-static {
+  position: static !important;
+  top: auto !important;
+  left: auto !important;
+  right: auto !important;
+  bottom: auto !important;
+  transform: none !important;
+}
+
+/* Força tamanhos naturais */
+.force-natural-size {
+  width: auto !important;
+  height: auto !important;
+  max-width: none !important;
+  max-height: none !important;
+  min-width: 0 !important;
+  min-height: 0 !important;
+}
+
+/* ===== DEBUGGING UTILITIES ===== */
+/* Para debug durante o processo de reset */
+
+.debug-boundaries {
+  outline: 1px solid red !important;
+}
+
+.debug-boundaries * {
+  outline: 1px solid blue !important;
+}
+
+.debug-layout {
+  background: rgba(255, 0, 0, 0.1) !important;
+}
+
+.debug-spacing {
+  background: linear-gradient(45deg, transparent 40%, rgba(255, 255, 0, 0.3) 50%, transparent 60%) !important;
+}
+
+/* ===== IMPLEMENTATION GUIDE ===== */
+/*
+🎯 COMO USAR:
+
+1. Wrapper principal:
+   <div className="app-root">
+     <div className="layout-zone">
+       // Todo o app aqui
+     </div>
+   </div>
+
+2. Componentes individuais:
+   <div className="component-zone">
+     // Componente isolado
+   </div>
+
+3. Conteúdo de página:
+   <div className="content-zone">
+     // Conteúdo da página
+   </div>
+
+4. Quando precisar de flex:
+   <div className="safe-flex-container">
+     // Layout flex controlado
+   </div>
+
+5. Para debug:
+   <div className="debug-boundaries">
+     // Mostra boundaries dos elementos
+   </div>
+
+⚠️ RISCOS E LIMITES:
+
+RISCOS:
+- all: unset pode quebrar herança útil
+- contain: layout pode afetar position: fixed
+- Overrides com !important podem ser difíceis de sobrescrever
+
+LIMITES:
+- Não isola JavaScript events
+- Não isola variables CSS (custom properties)
+- Performance overhead com contain: layout
+
+QUANDO NÃO USAR:
+- Em componentes que dependem de herança específica
+- Em elementos que precisam de position: fixed global
+- Em componentes third-party que dependem de estilos globais
+
+✅ MELHOR PRÁTICA:
+- Usar progressivamente (página por página)
+- Testar em todas as breakpoints
+- Remover debug utilities antes de produção
+- Documentar onde aplicou isolamento
+*/

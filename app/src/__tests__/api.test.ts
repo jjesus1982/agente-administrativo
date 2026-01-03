@@ -1,5 +1,14 @@
 import { api, API_BASE } from '@/lib/api';
 
+// Mock do getTenantId
+jest.mock('@/lib/api', () => {
+  const originalModule = jest.requireActual('@/lib/api');
+  return {
+    ...originalModule,
+    getTenantId: () => '1', // Mock tenant ID
+  };
+});
+
 describe('API Configuration', () => {
   describe('API_BASE', () => {
     it('should be defined', () => {
@@ -19,6 +28,8 @@ describe('API Configuration', () => {
     beforeEach(() => {
       (global.fetch as jest.Mock).mockClear();
       localStorage.clear();
+      // Mock tenant ID in localStorage
+      localStorage.setItem('currentTenantId', '1');
     });
 
     it('should have get method', () => {
@@ -56,7 +67,7 @@ describe('API Configuration', () => {
         await api.get('/users');
 
         expect(global.fetch).toHaveBeenCalledWith(
-          `${API_BASE}/users`,
+          `${API_BASE}/users?tenant_id=1`,
           expect.objectContaining({
             method: 'GET',
           })
@@ -113,7 +124,7 @@ describe('API Configuration', () => {
         await api.post('/users', testData);
 
         expect(global.fetch).toHaveBeenCalledWith(
-          `${API_BASE}/users`,
+          `${API_BASE}/users?tenant_id=1`,
           expect.objectContaining({
             method: 'POST',
             body: JSON.stringify(testData),
@@ -150,7 +161,7 @@ describe('API Configuration', () => {
         await api.put('/users/1', testData);
 
         expect(global.fetch).toHaveBeenCalledWith(
-          `${API_BASE}/users/1`,
+          `${API_BASE}/users/1?tenant_id=1`,
           expect.objectContaining({
             method: 'PUT',
             body: JSON.stringify(testData),
@@ -170,7 +181,7 @@ describe('API Configuration', () => {
         await api.patch('/users/1', testData);
 
         expect(global.fetch).toHaveBeenCalledWith(
-          `${API_BASE}/users/1`,
+          `${API_BASE}/users/1?tenant_id=1`,
           expect.objectContaining({
             method: 'PATCH',
             body: JSON.stringify(testData),
@@ -189,7 +200,7 @@ describe('API Configuration', () => {
         await api.delete('/users/1');
 
         expect(global.fetch).toHaveBeenCalledWith(
-          `${API_BASE}/users/1`,
+          `${API_BASE}/users/1?tenant_id=1`,
           expect.objectContaining({
             method: 'DELETE',
           })

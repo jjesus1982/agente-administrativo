@@ -4,7 +4,7 @@ import { useAuth } from '@/context/AuthContext';
 import { useTenant } from '@/contexts/TenantContext';
 import {
   Brain, TrendingUp, Target, Star, ThumbsUp, ThumbsDown,
-  MessageSquare, RefreshCw, CheckCircle, AlertCircle, Activity, Zap, Award
+  MessageSquare, RefreshCw, CheckCircle, AlertCircle, Activity, Zap, Award, BookOpen
 } from 'lucide-react';
 import { Card, CardHeader, CardTitle } from '@/components/ui';
 import { getMetricasAprendizado, getHistoricoAprendizado, getFeedbacksRecentes, coletarFeedback, retreinarModelos } from '@/lib/iaApi';

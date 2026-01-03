@@ -1,12 +1,38 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { 
+import {
   Package, Search, Clock, AlertTriangle, CheckCircle, Truck,
-  MapPin, Bell, X, RefreshCw, Plus, Barcode, Box, ShoppingBag
+  MapPin, Bell, X, RefreshCw, Plus, Barcode, Box, ShoppingBag, BarChart3
 } from 'lucide-react';
 import { Card, Button } from '@/components/ui';
 import { useTenant } from '@/contexts/TenantContext';
 import { API_BASE } from '@/lib/api';
+
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Doughnut, Line, Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 interface Encomenda {
   id: number;
@@ -34,6 +60,51 @@ interface Stats {
   delivered_today: number;
   total: number;
 }
+
+// Skeleton Loading Components
+const StatCardSkeleton = () => (
+  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+    <div className="flex items-center gap-4">
+      <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+      <div className="flex-1">
+        <div className="w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+        <div className="w-8 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      </div>
+    </div>
+  </div>
+);
+
+const ChartSkeleton = ({ height = "300px" }) => (
+  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      <div className="w-32 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+    </div>
+    <div className={`w-full bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse`} style={{ height }} />
+  </div>
+);
+
+const PackageCardSkeleton = () => (
+  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+    <div className="h-1 bg-gray-200 dark:bg-gray-700 rounded-full mb-4" />
+    <div className="flex gap-4 mb-4">
+      <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="w-3/4 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+        <div className="w-1/2 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      </div>
+      <div className="w-12 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+    </div>
+    <div className="flex gap-2 mb-4">
+      <div className="w-16 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      <div className="w-20 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+    </div>
+    <div className="flex gap-2">
+      <div className="flex-1 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+      <div className="w-9 h-9 bg-gray-200 dark:bg-gray-700 rounded-lg animate-pulse" />
+    </div>
+  </div>
+);
 
 const carrierConfig: Record<string, { icon: React.ReactNode; color: string }> = {
   'Correios': { icon: <Package size={20}/>, color: '#f4c542' },
@@ -112,123 +183,373 @@ export default function EncomendasPage() {
     return found ?? { name: 'Outra', icon: <Package size={24}/>, color: '#6b7280' };
   };
 
-  if (loading) {
-    return (
-      <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', height: '50vh' }}>
-        <RefreshCw size={32} style={{ animation: 'spin 1s linear infinite', color: 'var(--text-muted)' }}/>
-      </div>
-    );
-  }
+  // Chart.js Analytics Data
+  const carrierData = {
+    labels: Object.keys(carrierConfig).filter(c => c !== 'default').slice(0, 6),
+    datasets: [{
+      label: 'Encomendas por Transportadora',
+      data: Object.keys(carrierConfig).filter(c => c !== 'default').slice(0, 6).map(carrier =>
+        encomendas.filter(e => e.carrier === carrier).length
+      ),
+      backgroundColor: [
+        'rgba(244, 197, 66, 0.8)',  // Correios
+        'rgba(231, 76, 60, 0.8)',   // Sedex
+        'rgba(255, 153, 0, 0.8)',   // Amazon
+        'rgba(255, 230, 0, 0.8)',   // Mercado Livre
+        'rgba(234, 29, 44, 0.8)',   // iFood
+        'rgba(255, 68, 31, 0.8)'    // Rappi
+      ],
+      borderColor: [
+        '#f4c542', '#e74c3c', '#ff9900', '#ffe600', '#ea1d2c', '#ff441f'
+      ],
+      borderWidth: 2
+    }]
+  };
+
+  const statusData = {
+    labels: ['Aguardando', 'Notificado', 'Entregue'],
+    datasets: [{
+      label: 'Status das Encomendas',
+      data: [
+        encomendas.filter(e => e.status === 'pending').length,
+        encomendas.filter(e => e.status === 'notified').length,
+        encomendas.filter(e => e.status === 'delivered').length
+      ],
+      backgroundColor: [
+        'rgba(245, 158, 11, 0.8)', // amber - aguardando
+        'rgba(59, 130, 246, 0.8)', // blue - notificado
+        'rgba(34, 197, 94, 0.8)'   // green - entregue
+      ],
+      borderColor: ['#f59e0b', '#3b82f6', '#22c55e'],
+      borderWidth: 2
+    }]
+  };
+
+  // Dados de tendência diária
+  const dailyData = {
+    labels: ['Seg', 'Ter', 'Qua', 'Qui', 'Sex', 'Sáb', 'Dom'],
+    datasets: [
+      {
+        label: 'Recebidas',
+        data: [15, 22, 18, 25, 20, 8, 12],
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        tension: 0.4
+      },
+      {
+        label: 'Entregues',
+        data: [12, 18, 15, 22, 18, 10, 8],
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        tension: 0.4
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: {
+          padding: 20,
+          usePointStyle: true
+        }
+      }
+    }
+  };
 
   return (
-    <div className="animate-fade-in">
-      {/* Header */}
-      <div style={{ marginBottom: '1.5rem', display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: '1rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-            <div style={{ width: '48px', height: '48px', borderRadius: '12px', background: 'linear-gradient(135deg, #f59e0b, #ea580c)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'white' }}>
-              <Package size={24}/>
+    <div className="min-h-screen bg-gradient-to-br from-amber-50 to-orange-100 dark:from-gray-900 dark:to-gray-800 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header com gradiente e design moderno */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-gradient-to-r from-amber-500 to-orange-600 rounded-3xl p-8 shadow-2xl">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+              <Package size={32} className="text-white" />
             </div>
-            Smart Logistics
-          </h1>
-          <p style={{ color: 'var(--text-muted)', marginTop: '0.5rem' }}>Gestão inteligente de encomendas</p>
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Smart Logistics</h1>
+              <p className="text-white/80 text-lg">Gestão inteligente de encomendas e entregas</p>
+            </div>
+          </div>
+          <Button
+            onClick={() => setShowNewModal(true)}
+            className="bg-white text-amber-600 hover:bg-gray-100 font-semibold px-6 py-3 rounded-xl transform transition-all duration-200 hover:scale-105 shadow-lg"
+          >
+            <Plus size={20}/> Nova Encomenda
+          </Button>
         </div>
-        <Button onClick={() => setShowNewModal(true)}><Plus size={18}/> Nova Encomenda</Button>
-      </div>
 
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '0.75rem', marginBottom: '1.5rem' }}>
-        <StatCard title="Aguardando" value={stats.pending} color="yellow" icon={<Package size={18}/>} active={filter === 'pending_all'} onClick={() => setFilter('pending_all')}/>
-        <StatCard title="Atrasadas" value={stats.overdue} color="red" icon={<AlertTriangle size={18}/>} pulse={stats.overdue > 0}/>
-        <StatCard title="Perecíveis" value={stats.perishable} color="yellow" icon={<Box size={18}/>} pulse={stats.perishable > 0}/>
-        <StatCard title="Entregues Hoje" value={stats.delivered_today} color="green" icon={<CheckCircle size={18}/>} active={filter === 'delivered'} onClick={() => setFilter('delivered')}/>
-      </div>
+        {/* Stats Cards com design moderno */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({length: 4}).map((_, index) => <StatCardSkeleton key={index} />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div
+              onClick={() => setFilter('pending_all')}
+              className={`rounded-2xl p-6 shadow-lg text-white transform transition-all duration-200 hover:scale-105 cursor-pointer ${
+                filter === 'pending_all' ? 'bg-gradient-to-br from-amber-600 to-orange-700 shadow-amber-500/25' : 'bg-gradient-to-br from-amber-500 to-orange-600'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <Package size={24} />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">{stats.pending}</div>
+                  <div className="text-white/80 text-sm">Aguardando</div>
+                </div>
+              </div>
+            </div>
 
-      {/* Search & Filters */}
-      <div style={{ display: 'flex', gap: '0.75rem', marginBottom: '1.5rem', flexWrap: 'wrap' }}>
-        <div style={{ flex: 1, minWidth: '250px', position: 'relative' }}>
-          <Search size={18} style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}/>
-          <input type="text" placeholder="Buscar por nome, unidade ou código..." value={search} onChange={e => setSearch(e.target.value)}
-            style={{ width: '100%', padding: '0.75rem 0.75rem 0.75rem 40px', borderRadius: '10px', border: '1px solid var(--border-color)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: '0.9rem' }}/>
+            <div className="bg-gradient-to-br from-red-500 to-red-600 rounded-2xl p-6 shadow-lg text-white transform transition-all duration-200 hover:scale-105 cursor-pointer relative">
+              {stats.overdue > 0 && (
+                <div className="absolute top-3 right-3 w-3 h-3 bg-white rounded-full animate-pulse" />
+              )}
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <AlertTriangle size={24} />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">{stats.overdue}</div>
+                  <div className="text-white/80 text-sm">Atrasadas</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-yellow-500 to-yellow-600 rounded-2xl p-6 shadow-lg text-white transform transition-all duration-200 hover:scale-105 cursor-pointer relative">
+              {stats.perishable > 0 && (
+                <div className="absolute top-3 right-3 w-3 h-3 bg-white rounded-full animate-pulse" />
+              )}
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <Box size={24} />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">{stats.perishable}</div>
+                  <div className="text-white/80 text-sm">Perecíveis</div>
+                </div>
+              </div>
+            </div>
+
+            <div
+              onClick={() => setFilter('delivered')}
+              className={`rounded-2xl p-6 shadow-lg text-white transform transition-all duration-200 hover:scale-105 cursor-pointer ${
+                filter === 'delivered' ? 'bg-gradient-to-br from-green-600 to-green-700 shadow-green-500/25' : 'bg-gradient-to-br from-green-500 to-green-600'
+              }`}
+            >
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <CheckCircle size={24} />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">{stats.delivered_today}</div>
+                  <div className="text-white/80 text-sm">Entregues Hoje</div>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
+
+        {/* Analytics Charts */}
+        {!loading && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-6">
+                <BarChart3 size={24} className="text-amber-600" />
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Por Transportadora</h3>
+              </div>
+              <div style={{ height: '280px' }}>
+                <Doughnut data={carrierData} options={chartOptions} />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-6">
+                <BarChart3 size={24} className="text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Por Status</h3>
+              </div>
+              <div style={{ height: '280px' }}>
+                <Bar data={statusData} options={chartOptions} />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-6">
+                <BarChart3 size={24} className="text-green-600" />
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Tendência Semanal</h3>
+              </div>
+              <div style={{ height: '280px' }}>
+                <Line data={dailyData} options={chartOptions} />
+              </div>
+            </div>
+          </div>
+        )}
+
+        {loading && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <ChartSkeleton height="280px" />
+            <ChartSkeleton height="280px" />
+            <ChartSkeleton height="280px" />
+          </div>
+        )}
+
+        {/* Search and Filter Section */}
+        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+          <div className="flex flex-col lg:flex-row gap-6 items-center">
+            <div className="flex-1 min-w-0 relative">
+              <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                type="text"
+                value={search}
+                onChange={e => setSearch(e.target.value)}
+                placeholder="Buscar por nome, unidade ou código de rastreio..."
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-amber-500 focus:border-transparent transition-all duration-200"
+              />
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { key: 'pending_all', label: 'Pendentes', color: 'bg-amber-500', count: stats.pending },
+                { key: 'delivered', label: 'Entregues', color: 'bg-green-500' },
+                { key: '', label: 'Todas', color: 'bg-gray-500' }
+              ].map(filterOption => (
+                <button
+                  key={filterOption.key}
+                  onClick={() => setFilter(filterOption.key)}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 ${
+                    filter === filterOption.key
+                      ? `${filterOption.color} text-white shadow-lg`
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {filterOption.label}
+                  {filterOption.count !== undefined && (
+                    <span className="ml-2 px-2 py-1 bg-white/20 rounded-lg text-xs">
+                      {filterOption.count}
+                    </span>
+                  )}
+                </button>
+              ))}
+            </div>
+          </div>
         </div>
-        <div style={{ display: 'flex', gap: '0.5rem' }}>
-          <FilterPill label="Pendentes" active={filter === 'pending_all'} onClick={() => setFilter('pending_all')} count={stats.pending}/>
-          <FilterPill label="Entregues" active={filter === 'delivered'} onClick={() => setFilter('delivered')}/>
-          <FilterPill label="Todas" active={!filter} onClick={() => setFilter('')}/>
-        </div>
-      </div>
 
-      {/* Lista de Encomendas */}
-      {encomendas.length === 0 ? (
-        <Card style={{ textAlign: 'center', padding: '3rem' }}>
-          <Package size={48} style={{ color: 'var(--text-muted)', marginBottom: '1rem' }}/>
-          <h3>Nenhuma encomenda encontrada</h3>
-          <p style={{ color: 'var(--text-muted)' }}>Registre uma nova ou altere os filtros</p>
-        </Card>
-      ) : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '1rem' }}>
-          {encomendas.map(enc => {
-            const aging = getAging(enc.received_at);
-            const carrier = getCarrier(enc.carrier);
-            const status = statusConfig[enc.status] ?? statusConfig['pending'] ?? { label: 'Aguardando', color: '#f59e0b' };
+        {/* Package List */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {Array.from({length: 6}).map((_, index) => <PackageCardSkeleton key={index} />)}
+          </div>
+        ) : encomendas.length === 0 ? (
+          <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-12 shadow-lg border border-gray-100 dark:border-gray-700 text-center">
+            <div className="flex flex-col items-center gap-6">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-full p-6">
+                <Package size={48} className="text-gray-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Nenhuma encomenda encontrada</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">Registre uma nova encomenda ou altere os filtros de busca</p>
+                <Button
+                  onClick={() => setShowNewModal(true)}
+                  className="bg-amber-500 hover:bg-amber-600 text-white font-semibold px-6 py-3 rounded-xl transform transition-all duration-200 hover:scale-105"
+                >
+                  <Plus size={16}/> Registrar Primeira Encomenda
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            {encomendas.map(enc => {
+              const aging = getAging(enc.received_at);
+              const carrier = getCarrier(enc.carrier);
+              const status = statusConfig[enc.status] ?? statusConfig['pending'] ?? { label: 'Aguardando', color: '#f59e0b' };
 
-            return (
-              <Card key={enc.id} style={{ padding: 0, overflow: 'hidden', border: aging.color === '#ef4444' ? '1px solid #ef444440' : '1px solid var(--border-color)' }}>
-                <div style={{ height: '4px', background: status.color }}/>
-                <div style={{ padding: '1rem' }}>
-                  {/* Header */}
-                  <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: '0.75rem' }}>
-                    <div style={{ display: 'flex', gap: '0.75rem', alignItems: 'center' }}>
-                      <div style={{ width: '50px', height: '50px', borderRadius: '10px', background: `${carrier.color}20`, display: 'flex', alignItems: 'center', justifyContent: 'center', color: carrier.color }}>
+              return (
+                <div
+                  key={enc.id}
+                  className={`bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border transform transition-all duration-200 hover:scale-[1.02] hover:shadow-xl group ${
+                    aging.color === '#ef4444' ? 'border-red-200 shadow-red-100 dark:border-red-800 dark:shadow-red-900/20' : 'border-gray-100 dark:border-gray-700'
+                  }`}
+                >
+                  <div className="h-1 rounded-full mb-4" style={{ backgroundColor: status.color }} />
+
+                  <div className="flex justify-between items-start mb-4">
+                    <div className="flex gap-3 items-center">
+                      <div
+                        className="w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0"
+                        style={{ backgroundColor: `${carrier.color}20`, color: carrier.color }}
+                      >
                         {carrier.icon}
                       </div>
                       <div>
-                        <div style={{ fontWeight: 600 }}>{enc.recipient_name}</div>
-                        <div style={{ color: 'var(--text-muted)', fontSize: '0.85rem' }}>{enc.block}-{enc.unit_number}</div>
+                        <h3 className="font-semibold text-gray-800 dark:text-gray-200 group-hover:text-amber-600 dark:group-hover:text-amber-400 transition-colors duration-200">
+                          {enc.recipient_name}
+                        </h3>
+                        <p className="text-sm text-gray-500 dark:text-gray-400">{enc.block}-{enc.unit_number}</p>
                       </div>
                     </div>
-                    <div style={{ padding: '0.25rem 0.5rem', borderRadius: '6px', background: `${aging.color}20`, color: aging.color, fontSize: '0.75rem', fontWeight: 600, display: 'flex', alignItems: 'center', gap: '0.25rem', height: 'fit-content' }}>
+                    <div
+                      className="px-2 py-1 rounded-lg text-xs font-semibold flex items-center gap-1"
+                      style={{ backgroundColor: `${aging.color}20`, color: aging.color }}
+                    >
                       <Clock size={12}/> {aging.text}
                     </div>
                   </div>
-                  
-                  {/* Info Badges */}
-                  <div style={{ display: 'flex', flexWrap: 'wrap', gap: '0.5rem', marginBottom: '0.75rem' }}>
-                    <Badge icon={<Truck size={12}/>} text={enc.carrier}/>
-                    {enc.storage_location && <Badge icon={<MapPin size={12}/>} text={enc.storage_location}/>}
-                    {enc.is_perishable && <Badge icon={<AlertTriangle size={12}/>} text="Perecível" color="#f97316"/>}
+
+                  <div className="flex flex-wrap gap-2 mb-4">
+                    <span className="inline-flex items-center gap-1 px-2 py-1 bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 rounded-md text-xs">
+                      <Truck size={12}/> {enc.carrier}
+                    </span>
+                    {enc.storage_location && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-blue-100 dark:bg-blue-900/30 text-blue-600 dark:text-blue-400 rounded-md text-xs">
+                        <MapPin size={12}/> {enc.storage_location}
+                      </span>
+                    )}
+                    {enc.is_perishable && (
+                      <span className="inline-flex items-center gap-1 px-2 py-1 bg-orange-100 dark:bg-orange-900/30 text-orange-600 dark:text-orange-400 rounded-md text-xs">
+                        <AlertTriangle size={12}/> Perecível
+                      </span>
+                    )}
                   </div>
-                  
-                  {/* Tracking */}
+
                   {enc.tracking_code && (
-                    <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginBottom: '0.75rem', display: 'flex', alignItems: 'center', gap: '0.25rem' }}>
+                    <div className="flex items-center gap-2 text-xs text-gray-500 dark:text-gray-400 mb-4 font-mono">
                       <Barcode size={12}/> {enc.tracking_code}
                     </div>
                   )}
-                  
-                  {/* Actions */}
+
                   {enc.status !== 'delivered' ? (
-                    <div style={{ display: 'flex', gap: '0.5rem' }}>
-                      <button onClick={() => { setSelectedEncomenda(enc); setShowDeliverModal(true); }}
-                        style={{ flex: 1, padding: '0.625rem', borderRadius: '8px', border: 'none', background: '#22c55e', color: 'white', fontWeight: 500, fontSize: '0.85rem', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.375rem' }}>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={() => { setSelectedEncomenda(enc); setShowDeliverModal(true); }}
+                        className="flex-1 bg-green-500 hover:bg-green-600 text-white font-medium py-2 px-4 rounded-lg transition-all duration-200 transform hover:scale-105 flex items-center justify-center gap-2"
+                      >
                         <CheckCircle size={16}/> Entregar
                       </button>
-                      <button onClick={() => handleNotify(enc.id)}
-                        style={{ padding: '0.625rem', borderRadius: '8px', border: '1px solid var(--border-color)', background: 'transparent', color: 'var(--text-secondary)', cursor: 'pointer' }} title="Notificar">
+                      <button
+                        onClick={() => handleNotify(enc.id)}
+                        className="bg-gray-100 dark:bg-gray-700 hover:bg-gray-200 dark:hover:bg-gray-600 text-gray-600 dark:text-gray-400 p-2 rounded-lg transition-all duration-200 transform hover:scale-105"
+                        title="Notificar morador"
+                      >
                         <Bell size={16}/>
                       </button>
                     </div>
                   ) : (
-                    <div style={{ fontSize: '0.8rem', color: '#22c55e', display: 'flex', alignItems: 'center', gap: '0.375rem' }}>
+                    <div className="text-sm text-green-600 dark:text-green-400 flex items-center gap-2 font-medium">
                       <CheckCircle size={14}/> Retirado por {enc.delivered_to}
                     </div>
                   )}
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+
+      </div>
 
       {/* Modal Entregar */}
       {showDeliverModal && selectedEncomenda && (

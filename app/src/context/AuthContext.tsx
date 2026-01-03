@@ -3,10 +3,11 @@ import React, { createContext, useContext, useState, useEffect } from 'react';
 import { api } from '@/lib/api';
 
 export const ROLES = {
-    RESIDENT: 1,
-    SYNDIC: 2,
-    ADMIN: 4,
-    SUPER_ADMIN: 5
+    RESIDENT: 1,    // Morador
+    SYNDIC: 2,      // Síndico
+    DOORMAN: 3,     // Porteiro
+    ADMIN: 4,       // Administração
+    SUPER_ADMIN: 5  // Super Admin
 };
 
 interface User {
@@ -51,7 +52,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         const roles: Record<number, string> = {
             1: 'Morador',
             2: 'Síndico',
-            4: 'Admin',
+            3: 'Porteiro',
+            4: 'Administração',
             5: 'Super Admin'
         };
         return roles[role] || 'Morador';

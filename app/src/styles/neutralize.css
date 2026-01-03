@@ -1,0 +1,258 @@
+/* 🧱 NEUTRALIZAÇÃO DE ESTILOS HERDADOS PERIGOSOS */
+/* Remove overrides globais que causam conflitos */
+
+/* ===== NEUTRALIZAÇÃO DE ESTILOS GLOBAIS ===== */
+
+/* Resetar overrides de elementos específicos */
+div, section, article, aside, header, footer, main {
+  /* Não herdar display: flex de lugar nenhum */
+  display: block;
+
+  /* Resetar qualquer background forçado */
+  background: transparent;
+
+  /* Resetar borders que podem ter sido aplicadas */
+  border: none;
+
+  /* Resetar transforms que podem causar problemas */
+  transform: none;
+
+  /* Resetar position que pode quebrar layout */
+  position: static;
+
+  /* Resetar z-index problemático */
+  z-index: auto;
+}
+
+/* ===== NEUTRALIZAÇÃO DE TIPOGRAFIA FORÇADA ===== */
+
+/* Reset de font-size forçado globalmente */
+h1, h2, h3, h4, h5, h6,
+p, span, div, section, article {
+  font-size: inherit; /* Não forçar tamanhos */
+}
+
+/* Reset de line-height problemático */
+* {
+  line-height: initial; /* Deixar cada elemento definir */
+}
+
+/* Reset de font-weight forçado */
+b, strong,
+h1, h2, h3, h4, h5, h6 {
+  font-weight: inherit; /* Não forçar pesos */
+}
+
+/* ===== NEUTRALIZAÇÃO DE CORES GLOBAIS ===== */
+
+/* Reset de cores forçadas globalmente */
+*, *::before, *::after {
+  color: inherit; /* Não forçar cores específicas */
+  background-color: transparent; /* Não forçar backgrounds */
+  border-color: transparent; /* Não forçar border colors */
+}
+
+/* Neutralizar links com cores forçadas */
+a {
+  color: inherit;
+  text-decoration: none;
+}
+
+a:hover,
+a:focus,
+a:active {
+  color: inherit;
+  text-decoration: none;
+}
+
+/* ===== NEUTRALIZAÇÃO DE LAYOUTS QUEBRADOS ===== */
+
+/* Reset de flex/grid aplicados globalmente */
+body, html {
+  display: block !important; /* Forçar block se algo aplicou flex */
+}
+
+/* Reset de height forçada que quebra scroll */
+body, html, #__next, #root {
+  height: auto !important; /* Não forçar altura específica */
+  min-height: 100vh; /* Manter pelo menos altura da tela */
+}
+
+/* Reset de overflow problemático */
+body, html {
+  overflow: visible !important; /* Permitir scroll natural */
+}
+
+/* ===== NEUTRALIZAÇÃO DE ANIMAÇÕES CONFLITANTES ===== */
+
+/* Reset de transforms que podem estar aplicados globalmente */
+* {
+  transform: none;
+  animation: none;
+  transition: none;
+}
+
+/* Reset de will-change que pode causar problemas de performance */
+* {
+  will-change: auto;
+}
+
+/* ===== NEUTRALIZAÇÃO DE FORM STYLES ===== */
+
+/* Reset de estilos de input que podem estar sendo herdados */
+input,
+textarea,
+select,
+button {
+  /* Reset de background forçado */
+  background: transparent;
+
+  /* Reset de border forçada */
+  border: none;
+
+  /* Reset de color forçada */
+  color: inherit;
+
+  /* Reset de font forçada */
+  font: inherit;
+
+  /* Reset de outline forçado */
+  outline: none;
+
+  /* Reset de appearance forçada */
+  appearance: none;
+  -webkit-appearance: none;
+  -moz-appearance: none;
+}
+
+/* ===== NEUTRALIZAÇÃO DE PSEUDO-ELEMENTS ===== */
+
+/* Reset de pseudo-elements que podem estar interferindo */
+*::before,
+*::after {
+  content: none;
+  display: none;
+}
+
+/* Permitir pseudo-elements apenas quando explicitamente definidos */
+[data-before]::before,
+[data-after]::after,
+.has-pseudo::before,
+.has-pseudo::after {
+  display: block;
+}
+
+/* ===== NEUTRALIZAÇÃO DE RESPONSIVE OVERRIDES ===== */
+
+/* Reset de media queries que podem estar causando problemas */
+@media (max-width: 768px) {
+  * {
+    /* Reset de display forçado em mobile */
+    display: revert !important;
+  }
+}
+
+/* ===== NEUTRALIZAÇÃO DE CSS GRID/FLEX HERDADO ===== */
+
+/* Reset específico para containers que podem ter grid/flex herdado */
+.container,
+.wrapper,
+.layout,
+main,
+section {
+  display: block !important;
+  flex: none !important;
+  grid: none !important;
+  align-items: initial !important;
+  justify-content: initial !important;
+}
+
+/* ===== NEUTRALIZAÇÃO DE BOOTSTRAP/FRAMEWORK CONFLICTS ===== */
+
+/* Reset de classes utilitárias que podem estar interferindo */
+.row,
+.col,
+.container-fluid {
+  all: unset;
+  display: block;
+}
+
+/* Reset de flex utilities */
+.d-flex,
+.flex,
+.flex-row,
+.flex-column {
+  display: block !important;
+}
+
+/* ===== NEUTRALIZAÇÃO DE CUSTOM PROPERTIES PROBLEMÁTICAS ===== */
+
+/* Reset de variáveis CSS que podem estar causando conflitos */
+* {
+  /* Não herdar variables específicas que podem quebrar layout */
+  --width: initial;
+  --height: initial;
+  --position: initial;
+  --display: initial;
+  --flex: initial;
+  --grid: initial;
+}
+
+/* ===== NEUTRALIZAÇÃO DE SELECTION STYLES ===== */
+
+/* Reset de seleção personalizada que pode estar interferindo */
+*::selection {
+  background: transparent;
+  color: inherit;
+}
+
+*::-moz-selection {
+  background: transparent;
+  color: inherit;
+}
+
+/* ===== NEUTRALIZAÇÃO DE FOCUS PROBLEMÁTICO ===== */
+
+/* Reset de focus que pode estar sendo aplicado globalmente */
+*:focus {
+  outline: none !important;
+  box-shadow: none !important;
+  border: none !important;
+}
+
+/* ===== SCRIPT DE LIMPEZA PARA JAVASCRIPT ===== */
+/*
+Para usar via JavaScript se necessário:
+
+// Reset de classes aplicadas dinamicamente
+document.querySelectorAll('*').forEach(el => {
+  // Remove classes problemáticas
+  el.classList.remove('d-flex', 'flex', 'grid', 'absolute', 'fixed');
+
+  // Reset de styles inline problemáticos
+  el.style.display = '';
+  el.style.position = '';
+  el.style.transform = '';
+  el.style.zIndex = '';
+});
+*/
+
+/* ===== NOTAS DE APLICAÇÃO ===== */
+/*
+⚠️ IMPORTANTE:
+- Aplicar este arquivo APENAS temporariamente durante o reset
+- Depois de limpar, remover e aplicar design system limpo
+- Não usar em produção permanentemente
+- Testar cada página após aplicação
+
+✅ Este arquivo vai:
+- Neutralizar estilos globais problemáticos
+- Resetar layouts quebrados
+- Limpar overrides conflitantes
+- Preparar para novo design system
+
+❌ Pode quebrar temporariamente:
+- Layouts que dependem dos estilos antigos
+- Componentes com estilos específicos
+- Animações existentes
+*/

@@ -1,9 +1,35 @@
 "use client";
 import React, { useState, useEffect } from 'react';
-import { Wrench, Plus, Clock, CheckCircle, AlertCircle, Search, Calendar, User, Send, Edit, Eye, PlayCircle, XCircle } from 'lucide-react';
+import { Wrench, Plus, Clock, CheckCircle, AlertCircle, Search, Calendar, User, Send, Edit, Eye, PlayCircle, XCircle, BarChart3 } from 'lucide-react';
 import { Card, Button, Badge, EmptyState, Modal, StatCard } from '@/components/ui';
 import { useTenant } from '@/contexts/TenantContext';
 import { api } from '@/lib/api';
+
+import {
+  Chart as ChartJS,
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend,
+} from 'chart.js';
+import { Doughnut, Line, Bar } from 'react-chartjs-2';
+
+ChartJS.register(
+  CategoryScale,
+  LinearScale,
+  PointElement,
+  LineElement,
+  BarElement,
+  ArcElement,
+  Title,
+  Tooltip,
+  Legend
+);
 
 const CATEGORIAS = [
   { value: 'eletrica', label: '⚡ Elétrica' },
@@ -58,6 +84,56 @@ interface Stats {
   em_andamento: number;
   concluidos: number;
 }
+
+// Skeleton Loading Components
+const StatCardSkeleton = () => (
+  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+    <div className="flex items-center gap-4">
+      <div className="w-14 h-14 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse" />
+      <div className="flex-1">
+        <div className="w-24 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+        <div className="w-8 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      </div>
+    </div>
+  </div>
+);
+
+const ChartSkeleton = ({ height = "300px" }) => (
+  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+    <div className="flex items-center gap-3 mb-6">
+      <div className="w-6 h-6 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      <div className="w-32 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+    </div>
+    <div className={`w-full bg-gray-100 dark:bg-gray-700 rounded-xl animate-pulse`} style={{ height }} />
+  </div>
+);
+
+const TicketCardSkeleton = () => (
+  <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+    <div className="flex gap-4">
+      <div className="w-12 h-12 bg-gray-200 dark:bg-gray-700 rounded-xl animate-pulse flex-shrink-0" />
+      <div className="flex-1 min-w-0">
+        <div className="flex gap-2 mb-3">
+          <div className="w-20 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="w-16 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="w-14 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+        <div className="w-3/4 h-5 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-3" />
+        <div className="w-full h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-2" />
+        <div className="w-2/3 h-4 bg-gray-200 dark:bg-gray-700 rounded animate-pulse mb-4" />
+        <div className="flex gap-4">
+          <div className="w-20 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="w-24 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+          <div className="w-18 h-3 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        </div>
+      </div>
+      <div className="flex gap-2 flex-shrink-0">
+        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+        <div className="w-8 h-8 bg-gray-200 dark:bg-gray-700 rounded animate-pulse" />
+      </div>
+    </div>
+  </div>
+);
 
 export default function MaintenancePage() {
   const { currentTenant } = useTenant();
@@ -376,178 +452,390 @@ export default function MaintenancePage() {
     return found ?? { value: 'normal', label: 'Normal', color: 'info' };
   };
 
+  // Chart.js Analytics Data
+  const categoryData = {
+    labels: CATEGORIAS.slice(0, 6).map(cat => cat.label.split(' ')[1]), // Remove emojis
+    datasets: [{
+      label: 'Chamados por Categoria',
+      data: CATEGORIAS.slice(0, 6).map(cat =>
+        tickets.filter(t => t.category === cat.value).length
+      ),
+      backgroundColor: [
+        'rgba(251, 191, 36, 0.8)',   // yellow
+        'rgba(59, 130, 246, 0.8)',   // blue
+        'rgba(139, 92, 246, 0.8)',   // violet
+        'rgba(34, 197, 94, 0.8)',    // green
+        'rgba(236, 72, 153, 0.8)',   // pink
+        'rgba(99, 102, 241, 0.8)'    // indigo
+      ],
+      borderColor: [
+        '#fbbf24', '#3b82f6', '#8b5cf6', '#22c55e', '#ec4899', '#6366f1'
+      ],
+      borderWidth: 2
+    }]
+  };
+
+  const priorityData = {
+    labels: ['Baixa', 'Normal', 'Alta', 'Urgente'],
+    datasets: [{
+      label: 'Distribuição por Prioridade',
+      data: [
+        tickets.filter(t => t.priority === 'baixa').length,
+        tickets.filter(t => t.priority === 'normal').length,
+        tickets.filter(t => t.priority === 'alta').length,
+        tickets.filter(t => t.priority === 'urgente').length
+      ],
+      backgroundColor: [
+        'rgba(34, 197, 94, 0.8)',   // green - baixa
+        'rgba(59, 130, 246, 0.8)',  // blue - normal
+        'rgba(245, 158, 11, 0.8)',  // amber - alta
+        'rgba(239, 68, 68, 0.8)'    // red - urgente
+      ],
+      borderColor: ['#22c55e', '#3b82f6', '#f59e0b', '#ef4444'],
+      borderWidth: 2
+    }]
+  };
+
+  // Tendência de resolução
+  const resolutionData = {
+    labels: ['Jan', 'Fev', 'Mar', 'Abr', 'Mai', 'Jun'],
+    datasets: [
+      {
+        label: 'Abertos',
+        data: [8, 12, 6, 15, 10, 7],
+        borderColor: '#f59e0b',
+        backgroundColor: 'rgba(245, 158, 11, 0.1)',
+        tension: 0.4
+      },
+      {
+        label: 'Concluídos',
+        data: [5, 10, 8, 12, 14, 9],
+        borderColor: '#22c55e',
+        backgroundColor: 'rgba(34, 197, 94, 0.1)',
+        tension: 0.4
+      }
+    ]
+  };
+
+  const chartOptions = {
+    responsive: true,
+    maintainAspectRatio: false,
+    plugins: {
+      legend: {
+        position: 'top' as const,
+        labels: {
+          padding: 20,
+          usePointStyle: true
+        }
+      }
+    }
+  };
+
   return (
-    <div className="animate-fade-in">
-      {/* Header */}
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '1.5rem' }}>
-        <div>
-          <h1 style={{ fontSize: '1.5rem', fontWeight: 700, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            <Wrench size={28} style={{ color: 'var(--accent)' }}/> Chamados de Manutenção
-          </h1>
-          <p style={{ color: 'var(--text-muted)', fontSize: '0.875rem' }}>Gerencie os chamados técnicos do condomínio</p>
-        </div>
-        <Button onClick={() => setCreateModal(true)}><Plus size={18}/> Novo Chamado</Button>
-      </div>
-
-      {/* Stats */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(140px, 1fr))', gap: '1rem', marginBottom: '1.5rem' }}>
-        <StatCard title="Abertos" value={stats.abertos} icon={<Clock size={20}/>} color="yellow"/>
-        <StatCard title="Em Andamento" value={stats.em_andamento} icon={<AlertCircle size={20}/>} color="blue"/>
-        <StatCard title="Concluídos" value={stats.concluidos} icon={<CheckCircle size={20}/>} color="green"/>
-        <StatCard title="Total" value={stats.total} icon={<Wrench size={20}/>} color="default"/>
-      </div>
-
-      {/* Filtros e Tabs */}
-      <Card style={{ marginBottom: '1rem' }}>
-        <div style={{ display: 'flex', gap: '1rem', alignItems: 'center', flexWrap: 'wrap' }}>
-          <div style={{ flex: 1, minWidth: '200px', position: 'relative' }}>
-            <Search size={16} style={{ position: 'absolute', left: '0.75rem', top: '50%', transform: 'translateY(-50%)', color: 'var(--text-muted)' }}/>
-            <input
-              value={searchTerm}
-              onChange={e => setSearchTerm(e.target.value)}
-              placeholder="Buscar por título ou protocolo..."
-              style={{ width: '100%', padding: '0.6rem 0.6rem 0.6rem 2.25rem', borderRadius: '6px', background: 'var(--bg-tertiary)', border: '1px solid var(--border-default)', color: 'var(--text-primary)', fontSize: '0.875rem' }}
-            />
-          </div>
-          <div style={{ display: 'flex', gap: '0.5rem', flexWrap: 'wrap' }}>
-            {[
-              { key: 'todos', label: 'Todos' },
-              { key: 'aberto', label: 'Abertos' },
-              { key: 'em_andamento', label: 'Em Andamento' },
-              { key: 'concluido', label: 'Concluídos' },
-              { key: 'meus', label: 'Meus Chamados' },
-            ].map(tab => (
-              <button
-                key={tab.key}
-                onClick={() => setActiveTab(tab.key)}
-                style={{
-                  padding: '0.5rem 1rem',
-                  borderRadius: '6px',
-                  border: 'none',
-                  background: activeTab === tab.key ? 'var(--accent)' : 'var(--bg-tertiary)',
-                  color: activeTab === tab.key ? 'white' : 'var(--text-secondary)',
-                  cursor: 'pointer',
-                  fontSize: '0.85rem',
-                  fontWeight: 500
-                }}
-              >
-                {tab.label}
-              </button>
-            ))}
-          </div>
-        </div>
-      </Card>
-
-      {/* Lista de Tickets */}
-      {loading ? (
-        <Card padding="lg">
-          <div style={{ textAlign: 'center', color: 'var(--text-muted)' }}>
-            <div style={{ marginBottom: '0.5rem' }}>
-              🔄 Carregando chamados...
+    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800 p-6">
+      <div className="max-w-7xl mx-auto space-y-8">
+        {/* Header com gradiente e design moderno */}
+        <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-6 bg-gradient-to-r from-blue-500 to-indigo-600 rounded-3xl p-8 shadow-2xl">
+          <div className="flex items-center gap-4">
+            <div className="bg-white/20 backdrop-blur-sm rounded-2xl p-4">
+              <Wrench size={32} className="text-white" />
             </div>
-            {retryCount > 0 && (
-              <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)' }}>
-                Tentativa {retryCount + 1}/4
+            <div>
+              <h1 className="text-3xl font-bold text-white mb-2">Chamados de Manutenção</h1>
+              <p className="text-white/80 text-lg">Gerenciamento avançado de chamados técnicos do condomínio</p>
+            </div>
+          </div>
+          <Button
+            onClick={() => setCreateModal(true)}
+            className="bg-white text-blue-600 hover:bg-gray-100 font-semibold px-6 py-3 rounded-xl transform transition-all duration-200 hover:scale-105 shadow-lg"
+          >
+            <Plus size={20}/> Novo Chamado
+          </Button>
+        </div>
+
+        {/* Stats Cards com design moderno */}
+        {loading ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            {Array.from({length: 4}).map((_, index) => <StatCardSkeleton key={index} />)}
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="bg-gradient-to-br from-yellow-500 to-orange-600 rounded-2xl p-6 shadow-lg text-white transform transition-all duration-200 hover:scale-105 cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <Clock size={24} />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">{stats.abertos}</div>
+                  <div className="text-white/80 text-sm">Abertos</div>
+                </div>
               </div>
-            )}
-            <div style={{ fontSize: '0.75rem', color: 'var(--text-muted)', marginTop: '0.25rem' }}>
-              Timeout em 10 segundos
+            </div>
+
+            <div className="bg-gradient-to-br from-blue-500 to-blue-600 rounded-2xl p-6 shadow-lg text-white transform transition-all duration-200 hover:scale-105 cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <AlertCircle size={24} />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">{stats.em_andamento}</div>
+                  <div className="text-white/80 text-sm">Em Andamento</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-green-500 to-green-600 rounded-2xl p-6 shadow-lg text-white transform transition-all duration-200 hover:scale-105 cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <CheckCircle size={24} />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">{stats.concluidos}</div>
+                  <div className="text-white/80 text-sm">Concluídos</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-gray-500 to-gray-600 rounded-2xl p-6 shadow-lg text-white transform transition-all duration-200 hover:scale-105 cursor-pointer">
+              <div className="flex items-center justify-between mb-4">
+                <div className="bg-white/20 backdrop-blur-sm rounded-xl p-3">
+                  <Wrench size={24} />
+                </div>
+                <div className="text-right">
+                  <div className="text-3xl font-bold">{stats.total}</div>
+                  <div className="text-white/80 text-sm">Total</div>
+                </div>
+              </div>
             </div>
           </div>
-        </Card>
-      ) : loadingError ? (
-        <Card padding="lg">
-          <div style={{ textAlign: 'center' }}>
-            <div style={{ color: '#ef4444', marginBottom: '1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
-              <AlertCircle size={20} />
-              <strong>Erro ao Carregar Dados</strong>
+        )}
+
+        {/* Analytics Charts */}
+        {!loading && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-6">
+                <BarChart3 size={24} className="text-blue-600" />
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Por Categoria</h3>
+              </div>
+              <div style={{ height: '280px' }}>
+                <Doughnut data={categoryData} options={chartOptions} />
+              </div>
             </div>
-            <p style={{ color: 'var(--text-muted)', marginBottom: '1rem', fontSize: '0.9rem' }}>
-              {loadingError}
-            </p>
-            <Button onClick={() => fetchTickets()} variant="secondary">
-              🔄 Tentar Novamente
-            </Button>
+
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-6">
+                <BarChart3 size={24} className="text-orange-600" />
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Por Prioridade</h3>
+              </div>
+              <div style={{ height: '280px' }}>
+                <Bar data={priorityData} options={chartOptions} />
+              </div>
+            </div>
+
+            <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+              <div className="flex items-center gap-3 mb-6">
+                <BarChart3 size={24} className="text-green-600" />
+                <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Tendência Mensal</h3>
+              </div>
+              <div style={{ height: '280px' }}>
+                <Line data={resolutionData} options={chartOptions} />
+              </div>
+            </div>
           </div>
-        </Card>
-      ) : filteredTickets.length === 0 ? (
-        <Card>
-          <EmptyState
-            icon={<Wrench size={56} style={{ opacity: 0.5 }}/>}
-            title="Nenhum chamado encontrado"
-            description="Não há chamados de manutenção nesta categoria"
-            action={<Button onClick={() => setCreateModal(true)}><Plus size={16}/> Abrir Chamado</Button>}
-          />
-        </Card>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-          {filteredTickets.map(ticket => {
-            const statusInfo = STATUS_CONFIG[ticket.status] ?? STATUS_CONFIG.aberto ?? { label: 'Aberto', color: 'warning' as const };
-            const prioInfo = getPrioridadeInfo(ticket.priority);
-            
-            return (
-              <Card key={ticket.id} padding="none" style={{ cursor: 'pointer', overflow: 'hidden' }} onClick={() => setDetailModal(ticket)}>
-                <div style={{ 
-                  padding: '1.25rem',
-                  background: 'linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-tertiary) 100%)'
-                }}>
-                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: '1rem' }}>
-                    <div style={{ flex: 1 }}>
-                      {/* Header com ícone e título */}
-                      <div style={{ display: 'flex', alignItems: 'flex-start', gap: '0.875rem', marginBottom: '0.75rem' }}>
-                        <div style={{ 
-                          width: '44px', height: '44px', borderRadius: '12px', flexShrink: 0,
-                          background: prioInfo.color === 'error' ? 'rgba(239, 68, 68, 0.15)' : 
-                                     prioInfo.color === 'warning' ? 'rgba(245, 158, 11, 0.15)' : 'rgba(59, 130, 246, 0.15)',
-                          display: 'flex', alignItems: 'center', justifyContent: 'center'
-                        }}>
-                          <Wrench size={22} style={{ 
-                            color: prioInfo.color === 'error' ? '#ef4444' : 
-                                   prioInfo.color === 'warning' ? '#f59e0b' : '#3b82f6'
-                          }}/>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 0 }}>
-                          <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', flexWrap: 'wrap', marginBottom: '0.35rem' }}>
-                            <span style={{ fontSize: '0.7rem', color: 'var(--text-muted)', fontFamily: 'monospace', background: 'var(--bg-tertiary)', padding: '0.15rem 0.4rem', borderRadius: '4px' }}>{ticket.protocol}</span>
-                            <Badge variant={statusInfo.color} size="sm">{statusInfo.label}</Badge>
-                            <Badge variant={prioInfo.color as any} size="sm">{prioInfo.label}</Badge>
-                          </div>
-                          <h3 style={{ fontWeight: 700, fontSize: '1.05rem', margin: 0, color: 'var(--text-primary)', lineHeight: 1.3 }}>{ticket.title}</h3>
-                        </div>
+        )}
+
+        {loading && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+            <ChartSkeleton height="280px" />
+            <ChartSkeleton height="280px" />
+            <ChartSkeleton height="280px" />
+          </div>
+        )}
+
+        {/* Search and Filter Section */}
+        <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700">
+          <div className="flex flex-col lg:flex-row gap-6 items-center">
+            <div className="flex-1 min-w-0 relative">
+              <Search size={20} className="absolute left-4 top-1/2 transform -translate-y-1/2 text-gray-400" />
+              <input
+                value={searchTerm}
+                onChange={e => setSearchTerm(e.target.value)}
+                placeholder="Buscar por título ou protocolo..."
+                className="w-full pl-12 pr-4 py-3 bg-gray-50 dark:bg-gray-700 border border-gray-200 dark:border-gray-600 rounded-xl text-gray-800 dark:text-gray-200 placeholder-gray-400 focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200"
+              />
+            </div>
+            <div className="flex flex-wrap gap-3">
+              {[
+                { key: 'todos', label: 'Todos', color: 'bg-gray-500' },
+                { key: 'aberto', label: 'Abertos', color: 'bg-yellow-500' },
+                { key: 'em_andamento', label: 'Em Andamento', color: 'bg-blue-500' },
+                { key: 'concluido', label: 'Concluídos', color: 'bg-green-500' },
+                { key: 'meus', label: 'Meus Chamados', color: 'bg-purple-500' }
+              ].map(tab => (
+                <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  className={`px-4 py-2 rounded-xl font-medium transition-all duration-200 transform hover:scale-105 ${
+                    activeTab === tab.key
+                      ? `${tab.color} text-white shadow-lg`
+                      : 'bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-400 hover:bg-gray-200 dark:hover:bg-gray-600'
+                  }`}
+                >
+                  {tab.label}
+                </button>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Tickets List */}
+        {loading ? (
+          <div className="space-y-4">
+            {Array.from({length: 3}).map((_, index) => <TicketCardSkeleton key={index} />)}
+          </div>
+        ) : loadingError ? (
+          <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-12 shadow-lg border border-gray-100 dark:border-gray-700 text-center">
+            <div className="flex flex-col items-center gap-6">
+              <div className="bg-red-100 dark:bg-red-900/30 rounded-full p-6">
+                <AlertCircle size={48} className="text-red-500" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-red-600 dark:text-red-400 mb-2">Erro ao Carregar Dados</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">{loadingError}</p>
+                {retryCount > 0 && (
+                  <p className="text-sm text-gray-400 mb-4">Tentativa {retryCount + 1}/4</p>
+                )}
+                <Button
+                  onClick={() => fetchTickets()}
+                  className="bg-red-500 hover:bg-red-600 text-white font-semibold px-6 py-3 rounded-xl transform transition-all duration-200 hover:scale-105"
+                >
+                  <RefreshCw size={16}/> Tentar Novamente
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : filteredTickets.length === 0 ? (
+          <div className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-12 shadow-lg border border-gray-100 dark:border-gray-700 text-center">
+            <div className="flex flex-col items-center gap-6">
+              <div className="bg-gray-100 dark:bg-gray-700 rounded-full p-6">
+                <Wrench size={48} className="text-gray-400" />
+              </div>
+              <div>
+                <h3 className="text-xl font-semibold text-gray-800 dark:text-gray-200 mb-2">Nenhum chamado encontrado</h3>
+                <p className="text-gray-500 dark:text-gray-400 mb-6">Não há chamados de manutenção para os filtros selecionados</p>
+                <Button
+                  onClick={() => setCreateModal(true)}
+                  className="bg-blue-500 hover:bg-blue-600 text-white font-semibold px-6 py-3 rounded-xl transform transition-all duration-200 hover:scale-105"
+                >
+                  <Plus size={16}/> Abrir Primeiro Chamado
+                </Button>
+              </div>
+            </div>
+          </div>
+        ) : (
+          <div className="space-y-4">
+            {filteredTickets.map(ticket => {
+              const statusInfo = STATUS_CONFIG[ticket.status] ?? STATUS_CONFIG.aberto ?? { label: 'Aberto', color: 'warning' as const };
+              const prioInfo = getPrioridadeInfo(ticket.priority);
+
+              return (
+                <div
+                  key={ticket.id}
+                  onClick={() => setDetailModal(ticket)}
+                  className="bg-gradient-to-br from-white to-gray-50 dark:from-gray-800 dark:to-gray-900 rounded-2xl p-6 shadow-lg border border-gray-100 dark:border-gray-700 cursor-pointer transform transition-all duration-200 hover:scale-[1.02] hover:shadow-xl group"
+                >
+                  <div className="flex gap-4">
+                    <div className={`w-14 h-14 rounded-xl flex items-center justify-center flex-shrink-0 ${
+                      prioInfo.color === 'error' ? 'bg-red-100 dark:bg-red-900/30' :
+                      prioInfo.color === 'warning' ? 'bg-amber-100 dark:bg-amber-900/30' :
+                      prioInfo.color === 'info' ? 'bg-blue-100 dark:bg-blue-900/30' :
+                      'bg-green-100 dark:bg-green-900/30'
+                    }`}>
+                      <Wrench size={24} className={`${
+                        prioInfo.color === 'error' ? 'text-red-600 dark:text-red-400' :
+                        prioInfo.color === 'warning' ? 'text-amber-600 dark:text-amber-400' :
+                        prioInfo.color === 'info' ? 'text-blue-600 dark:text-blue-400' :
+                        'text-green-600 dark:text-green-400'
+                      }`} />
+                    </div>
+
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap gap-2 mb-3">
+                        <span className="text-xs font-mono bg-gray-100 dark:bg-gray-700 text-gray-600 dark:text-gray-300 px-2 py-1 rounded-md">
+                          {ticket.protocol}
+                        </span>
+                        <Badge variant={statusInfo.color} size="sm">
+                          {statusInfo.label}
+                        </Badge>
+                        <Badge variant={prioInfo.color as any} size="sm">
+                          {prioInfo.label}
+                        </Badge>
                       </div>
-                      
-                      {/* Descrição */}
-                      <p style={{ 
-                        color: 'var(--text-muted)', fontSize: '0.85rem', margin: '0 0 0.75rem 0',
-                        display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical', overflow: 'hidden',
-                        marginLeft: '56px', lineHeight: 1.5
-                      }}>{ticket.description}</p>
-                      
-                      {/* Meta info */}
-                      <div style={{ display: 'flex', gap: '1.25rem', fontSize: '0.8rem', color: 'var(--text-muted)', marginLeft: '56px', flexWrap: 'wrap' }}>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}>{getCategoriaLabel(ticket.category)}</span>
-                        <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}><Calendar size={13}/> {new Date(ticket.created_at).toLocaleDateString('pt-BR')}</span>
-                        {ticket.assigned_to && <span style={{ display: 'flex', alignItems: 'center', gap: '0.35rem' }}><User size={13}/> {ticket.assigned_to}</span>}
+
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200 mb-3 group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors duration-200">
+                        {ticket.title}
+                      </h3>
+
+                      <p className="text-gray-600 dark:text-gray-400 text-sm mb-4 line-clamp-2">
+                        {ticket.description}
+                      </p>
+
+                      <div className="flex flex-wrap gap-4 text-sm text-gray-500 dark:text-gray-400">
+                        <span className="flex items-center gap-1">
+                          {getCategoriaLabel(ticket.category)}
+                        </span>
+                        <span className="flex items-center gap-1">
+                          <Calendar size={14} />
+                          {new Date(ticket.created_at).toLocaleDateString('pt-BR')}
+                        </span>
+                        {ticket.assigned_to && (
+                          <span className="flex items-center gap-1">
+                            <User size={14} />
+                            {ticket.assigned_to}
+                          </span>
+                        )}
                       </div>
                     </div>
-                    
-                    {/* Botões de ação */}
-                    <div style={{ display: 'flex', gap: '0.5rem', flexShrink: 0 }} onClick={e => e.stopPropagation()}>
-                      <Button variant="ghost" size="sm" onClick={() => setDetailModal(ticket)} title="Ver detalhes"><Eye size={16}/></Button>
-                      <Button variant="ghost" size="sm" onClick={() => openEditModal(ticket)} title="Editar"><Edit size={16}/></Button>
+
+                    <div className="flex gap-2 flex-shrink-0" onClick={e => e.stopPropagation()}>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => setDetailModal(ticket)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        title="Ver detalhes"
+                      >
+                        <Eye size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openEditModal(ticket)}
+                        className="opacity-0 group-hover:opacity-100 transition-opacity duration-200"
+                        title="Editar"
+                      >
+                        <Edit size={16} />
+                      </Button>
                     </div>
                   </div>
                 </div>
-              </Card>
-            );
-          })}
-        </div>
-      )}
+              );
+            })}
+          </div>
+        )}
+
+      </div>
 
       {/* Modal Criar Chamado */}
       <Modal
         isOpen={createModal}
-        onClose={() => !submitting && (setCreateModal(false), resetForm())}
+        onClose={() => {
+          if (!submitting) {
+            setCreateModal(false);
+            resetForm();
+          }
+        }}
         title="Novo Chamado de Manutenção"
         size="lg"
         footer={

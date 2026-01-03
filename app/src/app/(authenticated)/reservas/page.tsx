@@ -2,8 +2,17 @@
 import React, { useState, useEffect } from 'react';
 import { useTenant } from '@/contexts/TenantContext';
 import { useAuth } from '@/context/AuthContext';
-import { Calendar, Users, ChevronLeft, ChevronRight, Check, X, Sparkles, PartyPopper, Clock, AlertCircle, Trash2, CalendarCheck, ChevronRight as Arrow } from 'lucide-react';
+import {
+  Calendar, Users, ChevronLeft, ChevronRight, Check, X, Sparkles, PartyPopper,
+  Clock, AlertCircle, Trash2, CalendarCheck, ChevronRight as Arrow,
+  BarChart3, TrendingUp, Zap
+} from 'lucide-react';
 import { API_BASE } from '@/lib/api';
+import { Chart as ChartJS, ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title } from 'chart.js';
+import { Doughnut, Bar } from 'react-chartjs-2';
+
+// Registrar componentes do Chart.js
+ChartJS.register(ArcElement, Tooltip, Legend, CategoryScale, LinearScale, BarElement, Title);
 
 interface Area { id: number; name: string; description: string; capacity: number; }
 interface DiaReserva { id: number; start_time: string; end_time: string; user_name: string; unit: string; event_name: string; status: string; }
@@ -150,100 +159,369 @@ export default function ReservasPage() {
   const hoje = new Date();
   const dias = getDiasDoMes();
 
-  const glassCard = { background: 'rgba(255, 255, 255, 0.03)', backdropFilter: 'blur(20px)', borderRadius: '24px', border: '1px solid rgba(255, 255, 255, 0.08)', overflow: 'hidden' };
+  // Skeleton Loading Components
+  const AreaCardSkeleton = () => (
+    <div className="p-4 bg-slate-700/20 border border-slate-600 rounded-xl animate-pulse">
+      <div className="w-24 h-4 bg-slate-600/50 rounded mb-2"></div>
+      <div className="flex items-center gap-2">
+        <div className="w-3 h-3 bg-slate-600/50 rounded"></div>
+        <div className="w-16 h-3 bg-slate-600/50 rounded"></div>
+      </div>
+    </div>
+  );
 
-  return (
-    <div style={{ minHeight: '100vh', background: 'linear-gradient(135deg, #0c0c1e 0%, #1a1a3e 50%, #0f2847 100%)', padding: '1.5rem', position: 'relative', overflow: 'hidden' }}>
-      {/* Gradient Orbs */}
-      <div style={{ position: 'absolute', top: '-15%', right: '-5%', width: '500px', height: '500px', background: 'radial-gradient(circle, rgba(139, 92, 246, 0.25) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)', pointerEvents: 'none' }}></div>
-      <div style={{ position: 'absolute', bottom: '-15%', left: '-5%', width: '400px', height: '400px', background: 'radial-gradient(circle, rgba(59, 130, 246, 0.2) 0%, transparent 70%)', borderRadius: '50%', filter: 'blur(60px)', pointerEvents: 'none' }}></div>
-
-      {/* Header */}
-      <div style={{ position: 'relative', marginBottom: '1.5rem', display: 'flex', alignItems: 'center', gap: '1rem' }}>
-        <div style={{ width: '52px', height: '52px', borderRadius: '16px', background: 'linear-gradient(135deg, #8b5cf6, #ec4899)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 8px 32px rgba(139, 92, 246, 0.35)' }}>
-          <Calendar size={26} color="white" />
-        </div>
-        <div>
-          <h1 style={{ fontSize: '1.75rem', fontWeight: 800, color: 'white', margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-            Reservas <Sparkles size={20} color="#fbbf24" />
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.5)', margin: 0, fontSize: '0.9rem' }}>Reserve áreas comuns do condomínio</p>
+  const CalendarSkeleton = () => (
+    <div className="p-6">
+      <div className="flex justify-between items-center mb-6">
+        <div className="w-32 h-6 bg-slate-600/50 rounded animate-pulse"></div>
+        <div className="flex items-center gap-2">
+          <div className="w-8 h-8 bg-slate-600/50 rounded animate-pulse"></div>
+          <div className="w-24 h-4 bg-slate-600/50 rounded animate-pulse"></div>
+          <div className="w-8 h-8 bg-slate-600/50 rounded animate-pulse"></div>
         </div>
       </div>
+      <div className="grid grid-cols-7 gap-2">
+        {[...Array(35)].map((_, i) => (
+          <div key={i} className="aspect-square bg-slate-600/20 rounded-lg animate-pulse"></div>
+        ))}
+      </div>
+    </div>
+  );
 
-      {/* Main Grid - 3 Columns */}
-      <div style={{ position: 'relative', display: 'grid', gridTemplateColumns: '260px 1fr 300px', gap: '1.25rem', alignItems: 'start' }}>
-        
+  const ReservationSkeleton = () => (
+    <div className="p-4 bg-slate-700/20 border border-slate-600 rounded-xl animate-pulse">
+      <div className="w-20 h-4 bg-slate-600/50 rounded mb-2"></div>
+      <div className="w-16 h-3 bg-slate-600/50 rounded mb-1"></div>
+      <div className="w-24 h-3 bg-slate-600/50 rounded"></div>
+    </div>
+  );
+
+  // Chart data for reservations analytics
+  const reservationStats = {
+    labels: ['Esta Semana', 'Próxima Semana', 'Este Mês'],
+    datasets: [{
+      label: 'Reservas',
+      data: [
+        minhasReservas.filter(r => new Date(r.date) >= new Date(Date.now() - 7 * 24 * 60 * 60 * 1000)).length,
+        minhasReservas.filter(r => {
+          const date = new Date(r.date);
+          const nextWeek = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
+          const weekAfter = new Date(Date.now() + 14 * 24 * 60 * 60 * 1000);
+          return date >= nextWeek && date <= weekAfter;
+        }).length,
+        minhasReservas.filter(r => new Date(r.date).getMonth() === new Date().getMonth()).length
+      ],
+      backgroundColor: ['rgba(34, 197, 94, 0.8)', 'rgba(59, 130, 246, 0.8)', 'rgba(139, 92, 246, 0.8)'],
+      borderColor: ['#22c55e', '#3b82f6', '#8b5cf6'],
+      borderWidth: 2
+    }]
+  };
+
+  const areaUsageData = {
+    labels: areas.map(a => a.name.split(' ')[0]),
+    datasets: [{
+      label: 'Uso das Áreas',
+      data: areas.map(area => {
+        // Count reservations for this area
+        return Object.values(diasOcupados).flat().filter(r =>
+          areas.find(a => a.id === area.id)?.name === area.name
+        ).length;
+      }),
+      backgroundColor: 'rgba(236, 72, 153, 0.6)',
+      borderColor: 'rgba(236, 72, 153, 1)',
+      borderWidth: 2
+    }]
+  };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6">
+        <div className="max-w-7xl mx-auto space-y-6">
+          {/* Header Skeleton */}
+          <div className="flex items-center gap-4">
+            <div className="w-13 h-13 bg-slate-700/50 rounded-2xl animate-pulse"></div>
+            <div className="space-y-2">
+              <div className="w-32 h-7 bg-slate-700/50 rounded animate-pulse"></div>
+              <div className="w-48 h-4 bg-slate-700/30 rounded animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Analytics Cards */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
+              <div className="w-32 h-5 bg-slate-700/50 rounded animate-pulse mb-4"></div>
+              <div className="h-64 bg-slate-700/20 rounded-xl animate-pulse"></div>
+            </div>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
+              <div className="w-24 h-5 bg-slate-700/50 rounded animate-pulse mb-4"></div>
+              <div className="h-64 bg-slate-700/20 rounded-xl animate-pulse"></div>
+            </div>
+          </div>
+
+          {/* Main Content */}
+          <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
+              <div className="w-16 h-5 bg-slate-700/50 rounded animate-pulse mb-4"></div>
+              <div className="space-y-3">
+                {[...Array(4)].map((_, i) => <AreaCardSkeleton key={i} />)}
+              </div>
+            </div>
+            <div className="xl:col-span-2 bg-slate-800/50 border border-slate-700 rounded-2xl">
+              <CalendarSkeleton />
+            </div>
+            <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6">
+              <div className="w-28 h-5 bg-slate-700/50 rounded animate-pulse mb-4"></div>
+              <div className="space-y-3">
+                {[...Array(3)].map((_, i) => <ReservationSkeleton key={i} />)}
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="min-h-screen bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900 p-6 relative overflow-hidden">
+      {/* Modern Gradient Orbs */}
+      <div className="absolute -top-32 -right-20 w-96 h-96 bg-gradient-to-br from-violet-500/20 to-purple-600/10 rounded-full blur-3xl pointer-events-none animate-pulse"></div>
+      <div className="absolute -bottom-32 -left-20 w-80 h-80 bg-gradient-to-tr from-blue-500/15 to-cyan-400/10 rounded-full blur-3xl pointer-events-none animate-pulse delay-1000"></div>
+
+      <div className="max-w-7xl mx-auto relative space-y-6">
+        {/* Modern Header */}
+        <div className="flex items-center gap-4 mb-8">
+          <div className="w-14 h-14 rounded-2xl bg-gradient-to-br from-violet-500 to-pink-500 flex items-center justify-center shadow-lg shadow-violet-500/25 group-hover:shadow-xl group-hover:shadow-violet-500/30 transition-all duration-300">
+            <Calendar className="w-7 h-7 text-white" />
+          </div>
+          <div>
+            <div className="flex items-center gap-3">
+              <h1 className="text-3xl font-bold bg-gradient-to-r from-violet-400 via-pink-400 to-cyan-400 bg-clip-text text-transparent">
+                Reservas
+              </h1>
+              <div className="animate-bounce">
+                <Sparkles className="w-5 h-5 text-amber-400" />
+              </div>
+            </div>
+            <p className="text-slate-400 text-lg">Reserve áreas comuns do condomínio</p>
+          </div>
+        </div>
+
+        {/* Analytics Section */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 group hover:bg-slate-800/70 transition-all duration-300 hover:shadow-xl hover:shadow-violet-500/10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+                <BarChart3 className="w-5 h-5 text-violet-400" />
+                Minhas Reservas
+              </h3>
+              <TrendingUp className="w-5 h-5 text-green-400 opacity-70 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="h-64">
+              {reservationStats.datasets[0].data.some(d => d > 0) ? (
+                <Bar
+                  data={reservationStats}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: { display: false },
+                      tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#e2e8f0',
+                        bodyColor: '#cbd5e1',
+                        borderColor: '#475569',
+                        borderWidth: 1
+                      }
+                    },
+                    scales: {
+                      x: {
+                        ticks: { color: '#94a3b8', font: { size: 11 } },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                      },
+                      y: {
+                        ticks: { color: '#94a3b8', font: { size: 11 } },
+                        grid: { color: 'rgba(148, 163, 184, 0.1)' }
+                      }
+                    }
+                  }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <Calendar className="w-12 h-12 text-slate-500 mx-auto mb-2" />
+                    <p className="text-slate-400 text-sm">Nenhuma reserva ainda</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+
+          <div className="bg-slate-800/50 border border-slate-700 rounded-2xl p-6 group hover:bg-slate-800/70 transition-all duration-300 hover:shadow-xl hover:shadow-pink-500/10">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="text-lg font-semibold text-slate-200 flex items-center gap-2">
+                <PartyPopper className="w-5 h-5 text-pink-400" />
+                Uso das Áreas
+              </h3>
+              <Zap className="w-5 h-5 text-yellow-400 opacity-70 group-hover:opacity-100 transition-opacity" />
+            </div>
+            <div className="h-64">
+              {areaUsageData.datasets[0].data.some(d => d > 0) ? (
+                <Doughnut
+                  data={areaUsageData}
+                  options={{
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                      legend: {
+                        position: 'bottom',
+                        labels: {
+                          color: '#94a3b8',
+                          font: { size: 11 },
+                          padding: 15
+                        }
+                      },
+                      tooltip: {
+                        backgroundColor: 'rgba(15, 23, 42, 0.9)',
+                        titleColor: '#e2e8f0',
+                        bodyColor: '#cbd5e1',
+                        borderColor: '#475569',
+                        borderWidth: 1
+                      }
+                    }
+                  }}
+                />
+              ) : (
+                <div className="flex items-center justify-center h-full">
+                  <div className="text-center">
+                    <PartyPopper className="w-12 h-12 text-slate-500 mx-auto mb-2" />
+                    <p className="text-slate-400 text-sm">Aguardando dados de uso</p>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
+        </div>
+
+      {/* Modern Main Grid - Responsive */}
+      <div className="grid grid-cols-1 xl:grid-cols-4 gap-6">
+
         {/* Painel 1: Áreas */}
-        <div style={glassCard}>
-          <div style={{ padding: '1.25rem', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-            <h2 style={{ color: 'white', fontSize: '0.95rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <PartyPopper size={18} color="#fbbf24" /> Áreas
+        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl overflow-hidden">
+          <div className="p-5 border-b border-slate-700/50 bg-slate-700/20">
+            <h2 className="text-slate-200 text-base font-bold flex items-center gap-2">
+              <div className="p-1.5 bg-amber-500/20 rounded-lg">
+                <PartyPopper className="w-4 h-4 text-amber-400" />
+              </div>
+              Áreas Comuns
             </h2>
           </div>
-          <div style={{ padding: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.5rem', maxHeight: '450px', overflowY: 'auto' }}>
-            {loading ? (
-              <div style={{ padding: '2rem', textAlign: 'center', color: 'rgba(255,255,255,0.4)' }}>Carregando...</div>
-            ) : areas.map(area => (
-              <div key={area.id} onClick={() => setSelectedArea(area)}
-                style={{
-                  padding: '1rem', borderRadius: '14px', cursor: 'pointer', transition: 'all 0.25s ease',
-                  background: selectedArea?.id === area.id ? 'linear-gradient(135deg, rgba(139, 92, 246, 0.35), rgba(236, 72, 153, 0.25))' : 'rgba(255, 255, 255, 0.02)',
-                  border: selectedArea?.id === area.id ? '1px solid rgba(139, 92, 246, 0.4)' : '1px solid rgba(255, 255, 255, 0.04)',
-                  transform: selectedArea?.id === area.id ? 'scale(1.02)' : 'scale(1)'
-                }}>
-                <div style={{ fontWeight: 700, color: 'white', fontSize: '0.9rem', marginBottom: '0.2rem' }}>{area.name}</div>
-                <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.45)', fontSize: '0.75rem' }}>
-                  <Users size={12} /> {area.capacity} pessoas
+          <div className="p-3 space-y-2 max-h-96 overflow-y-auto custom-scrollbar">
+            {areas.map(area => (
+              <div
+                key={area.id}
+                onClick={() => setSelectedArea(area)}
+                className={`p-4 rounded-xl cursor-pointer transition-all duration-300 group ${
+                  selectedArea?.id === area.id
+                    ? 'bg-gradient-to-br from-violet-500/30 to-pink-500/20 border border-violet-400/40 scale-[1.02] shadow-lg shadow-violet-500/20'
+                    : 'bg-slate-700/20 border border-slate-600/30 hover:bg-slate-700/40 hover:border-slate-500/50 hover:scale-[1.01]'
+                }`}
+              >
+                <div className="font-semibold text-white text-sm mb-1 group-hover:text-slate-100 transition-colors">
+                  {area.name}
                 </div>
+                <div className="flex items-center gap-2 text-slate-400 text-xs">
+                  <Users className="w-3 h-3" />
+                  <span>{area.capacity} pessoas</span>
+                </div>
+                {area.description && (
+                  <div className="text-xs text-slate-500 mt-1 line-clamp-2">
+                    {area.description}
+                  </div>
+                )}
               </div>
             ))}
           </div>
         </div>
 
         {/* Painel 2: Calendário */}
-        <div style={glassCard}>
+        <div className="xl:col-span-2 bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl overflow-hidden">
           {selectedArea ? (
             <>
-              <div style={{ padding: '1.25rem 1.5rem', background: 'linear-gradient(135deg, rgba(139, 92, 246, 0.15), rgba(236, 72, 153, 0.08))', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+              <div className="p-6 bg-gradient-to-r from-violet-500/15 to-pink-500/10 border-b border-slate-700/50">
+                <div className="flex justify-between items-center">
                   <div>
-                    <h2 style={{ color: 'white', fontSize: '1.2rem', fontWeight: 800, margin: 0 }}>{selectedArea.name}</h2>
-                    <div style={{ display: 'flex', gap: '1rem', marginTop: '0.35rem' }}>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}><Users size={13} /> {selectedArea.capacity}</span>
-                      <span style={{ display: 'flex', alignItems: 'center', gap: '0.3rem', color: 'rgba(255,255,255,0.5)', fontSize: '0.8rem' }}><Clock size={13} /> 08h-22h</span>
+                    <h2 className="text-white text-xl font-bold mb-2">{selectedArea.name}</h2>
+                    <div className="flex gap-4">
+                      <span className="flex items-center gap-2 text-slate-400 text-sm">
+                        <Users className="w-4 h-4" />
+                        {selectedArea.capacity} pessoas
+                      </span>
+                      <span className="flex items-center gap-2 text-slate-400 text-sm">
+                        <Clock className="w-4 h-4" />
+                        08h às 22h
+                      </span>
                     </div>
                   </div>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
-                    <button onClick={() => { if (currentMonth === 1) { setCurrentMonth(12); setCurrentYear(y => y - 1); } else setCurrentMonth(m => m - 1); }}
-                      style={{ width: '38px', height: '38px', borderRadius: '12px', border: 'none', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <ChevronLeft size={20} />
+                  <div className="flex items-center gap-3">
+                    <button
+                      onClick={() => {
+                        if (currentMonth === 1) {
+                          setCurrentMonth(12);
+                          setCurrentYear(y => y - 1);
+                        } else {
+                          setCurrentMonth(m => m - 1);
+                        }
+                      }}
+                      className="w-10 h-10 rounded-xl bg-slate-700/50 hover:bg-slate-600/50 text-white transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
+                    >
+                      <ChevronLeft className="w-5 h-5" />
                     </button>
-                    <span style={{ minWidth: '140px', textAlign: 'center', fontWeight: 700, fontSize: '1rem', color: 'white' }}>
+                    <span className="min-w-36 text-center font-bold text-lg text-white">
                       {MESES[currentMonth - 1]} {currentYear}
                     </span>
-                    <button onClick={() => { if (currentMonth === 12) { setCurrentMonth(1); setCurrentYear(y => y + 1); } else setCurrentMonth(m => m + 1); }}
-                      style={{ width: '38px', height: '38px', borderRadius: '12px', border: 'none', background: 'rgba(255,255,255,0.08)', color: 'white', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-                      <ChevronRight size={20} />
+                    <button
+                      onClick={() => {
+                        if (currentMonth === 12) {
+                          setCurrentMonth(1);
+                          setCurrentYear(y => y + 1);
+                        } else {
+                          setCurrentMonth(m => m + 1);
+                        }
+                      }}
+                      className="w-10 h-10 rounded-xl bg-slate-700/50 hover:bg-slate-600/50 text-white transition-all duration-200 flex items-center justify-center hover:scale-105 active:scale-95"
+                    >
+                      <ChevronRight className="w-5 h-5" />
                     </button>
                   </div>
                 </div>
               </div>
 
-              {/* Legenda */}
-              <div style={{ display: 'flex', gap: '1.5rem', padding: '0.75rem 1.5rem', borderBottom: '1px solid rgba(255,255,255,0.04)', fontSize: '0.75rem' }}>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.5)' }}><span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'linear-gradient(135deg, #22c55e, #16a34a)' }}></span> Livre</span>
-                <span style={{ display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.5)' }}><span style={{ width: '10px', height: '10px', borderRadius: '3px', background: 'linear-gradient(135deg, #ef4444, #dc2626)' }}></span> Ocupado</span>
+              {/* Legenda Modernizada */}
+              <div className="flex gap-6 px-6 py-3 border-b border-slate-700/30 text-sm">
+                <span className="flex items-center gap-2 text-slate-400">
+                  <div className="w-3 h-3 rounded bg-gradient-to-br from-green-500 to-emerald-600"></div>
+                  Disponível
+                </span>
+                <span className="flex items-center gap-2 text-slate-400">
+                  <div className="w-3 h-3 rounded bg-gradient-to-br from-red-500 to-red-600"></div>
+                  Ocupado
+                </span>
+                <span className="flex items-center gap-2 text-slate-400">
+                  <div className="w-3 h-3 rounded bg-gradient-to-br from-violet-500 to-purple-600 ring-2 ring-violet-400/50"></div>
+                  Hoje
+                </span>
               </div>
 
-              {/* Calendário */}
-              <div style={{ padding: '1.25rem 1.5rem' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.4rem', marginBottom: '0.75rem' }}>
+              {/* Calendário Modernizado */}
+              <div className="p-6">
+                <div className="grid grid-cols-7 gap-2 mb-4">
                   {DIAS_SEMANA.map((dia, i) => (
-                    <div key={i} style={{ textAlign: 'center', fontSize: '0.7rem', fontWeight: 700, color: 'rgba(255,255,255,0.35)', padding: '0.4rem' }}>{dia}</div>
+                    <div key={i} className="text-center text-xs font-bold text-slate-500 p-2 uppercase tracking-wide">
+                      {dia}
+                    </div>
                   ))}
                 </div>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(7, 1fr)', gap: '0.4rem' }}>
+                <div className="grid grid-cols-7 gap-2">
                   {dias.map((dia, idx) => {
                     if (dia === null) return <div key={idx}></div>;
                     const dataStr = `${currentYear}-${String(currentMonth).padStart(2, '0')}-${String(dia).padStart(2, '0')}`;
@@ -251,19 +529,44 @@ export default function ReservasPage() {
                     const ocupado = reservasDoDia.length > 0;
                     const passado = new Date(dataStr) < new Date(hoje.toDateString());
                     const ehHoje = dia === hoje.getDate() && currentMonth === hoje.getMonth() + 1 && currentYear === hoje.getFullYear();
-                    
+
                     return (
-                      <div key={idx}
-                        onClick={() => { if (!passado && !ocupado) { setSelectedDate(dataStr); setShowModal(true); } else if (ocupado) setSelectedDate(dataStr); }}
-                        style={{
-                          aspectRatio: '1', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                          borderRadius: '10px', cursor: passado ? 'default' : 'pointer', transition: 'all 0.2s',
-                          background: ocupado ? 'rgba(239, 68, 68, 0.18)' : passado ? 'rgba(255,255,255,0.02)' : 'rgba(34, 197, 94, 0.12)',
-                          border: ehHoje ? '2px solid #8b5cf6' : ocupado ? '1px solid rgba(239, 68, 68, 0.35)' : passado ? '1px solid transparent' : '1px solid rgba(34, 197, 94, 0.25)',
-                          opacity: passado ? 0.4 : 1
-                        }}>
-                        <span style={{ fontWeight: ehHoje ? 800 : 600, fontSize: '0.9rem', color: ehHoje ? '#c4b5fd' : ocupado ? '#fca5a5' : passado ? 'rgba(255,255,255,0.25)' : '#86efac' }}>{dia}</span>
-                        {ocupado && <span style={{ fontSize: '0.5rem', color: '#fca5a5', fontWeight: 700 }}>●</span>}
+                      <div
+                        key={idx}
+                        onClick={() => {
+                          if (!passado && !ocupado) {
+                            setSelectedDate(dataStr);
+                            setShowModal(true);
+                          } else if (ocupado) {
+                            setSelectedDate(dataStr);
+                          }
+                        }}
+                        className={`
+                          aspect-square flex flex-col items-center justify-center rounded-xl transition-all duration-200 cursor-pointer group
+                          ${ehHoje
+                            ? 'bg-gradient-to-br from-violet-500/40 to-purple-600/30 border-2 border-violet-400 shadow-lg shadow-violet-500/25'
+                            : ocupado
+                              ? 'bg-gradient-to-br from-red-500/20 to-red-600/10 border border-red-400/30 hover:from-red-500/30 hover:to-red-600/20'
+                              : passado
+                                ? 'bg-slate-700/10 border border-transparent opacity-40 cursor-default'
+                                : 'bg-gradient-to-br from-green-500/20 to-emerald-600/10 border border-green-400/30 hover:from-green-500/30 hover:to-emerald-600/20 hover:scale-105 hover:shadow-lg hover:shadow-green-500/20'
+                          }
+                        `}
+                      >
+                        <span className={`text-sm font-semibold transition-colors ${
+                          ehHoje
+                            ? 'text-violet-200 font-bold'
+                            : ocupado
+                              ? 'text-red-300 group-hover:text-red-200'
+                              : passado
+                                ? 'text-slate-500'
+                                : 'text-green-300 group-hover:text-green-200'
+                        }`}>
+                          {dia}
+                        </span>
+                        {ocupado && (
+                          <div className="w-1 h-1 bg-red-400 rounded-full mt-1"></div>
+                        )}
                       </div>
                     );
                   })}
@@ -272,68 +575,108 @@ export default function ReservasPage() {
 
               {/* Info dia selecionado ocupado */}
               {selectedDate && diasOcupados[selectedDate] && !showModal && (
-                <div style={{ margin: '0 1.5rem 1.25rem', padding: '1rem', borderRadius: '14px', background: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.15)' }}>
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', marginBottom: '0.5rem' }}>
-                    <AlertCircle size={16} color="#fca5a5" />
-                    <span style={{ fontWeight: 700, color: 'white', fontSize: '0.85rem' }}>
+                <div className="mx-6 mb-6 p-4 rounded-xl bg-red-500/10 border border-red-400/20 backdrop-blur-sm">
+                  <div className="flex items-center gap-2 mb-3">
+                    <AlertCircle className="w-4 h-4 text-red-400" />
+                    <span className="font-bold text-white text-sm">
                       {new Date(selectedDate + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short' })} - Ocupado
                     </span>
                   </div>
-                  {diasOcupados[selectedDate].map((r, i) => (
-                    <div key={i} style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>
-                      <strong style={{ color: 'white' }}>{r.user_name}</strong> • {r.start_time} - {r.end_time}
-                    </div>
-                  ))}
+                  <div className="space-y-2">
+                    {diasOcupados[selectedDate].map((r, i) => (
+                      <div key={i} className="text-slate-300 text-sm bg-red-500/5 p-2 rounded-lg">
+                        <span className="font-medium text-white">{r.user_name}</span>
+                        <span className="text-slate-400"> • {r.start_time} - {r.end_time}</span>
+                        {r.event_name && (
+                          <div className="text-xs text-red-300 mt-1">{r.event_name}</div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
                 </div>
               )}
             </>
           ) : (
-            <div style={{ padding: '4rem', textAlign: 'center', color: 'rgba(255,255,255,0.3)' }}>
-              <Calendar size={48} style={{ marginBottom: '1rem', opacity: 0.3 }} />
-              <p>Selecione uma área</p>
+            <div className="p-16 text-center">
+              <Calendar className="w-16 h-16 text-slate-500 mx-auto mb-4 opacity-30" />
+              <p className="text-slate-400">Selecione uma área para visualizar o calendário</p>
             </div>
           )}
         </div>
 
         {/* Painel 3: Minhas Reservas */}
-        <div style={glassCard}>
-          <div style={{ padding: '1.25rem', borderBottom: '1px solid rgba(255, 255, 255, 0.06)' }}>
-            <h2 style={{ color: 'white', fontSize: '0.95rem', fontWeight: 700, margin: 0, display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <CalendarCheck size={18} color="#22c55e" /> Minhas Reservas
+        <div className="bg-slate-800/50 backdrop-blur-xl border border-slate-700 rounded-2xl overflow-hidden">
+          <div className="p-5 border-b border-slate-700/50 bg-slate-700/20">
+            <h2 className="text-slate-200 text-base font-bold flex items-center gap-2">
+              <div className="p-1.5 bg-green-500/20 rounded-lg">
+                <CalendarCheck className="w-4 h-4 text-green-400" />
+              </div>
+              Minhas Reservas
             </h2>
           </div>
-          <div style={{ padding: '0.75rem', maxHeight: '450px', overflowY: 'auto' }}>
+          <div className="p-3 max-h-96 overflow-y-auto custom-scrollbar">
             {minhasReservas.length === 0 ? (
-              <div style={{ padding: '2rem 1rem', textAlign: 'center', color: 'rgba(255,255,255,0.35)', fontSize: '0.85rem' }}>
-                Você ainda não tem reservas
+              <div className="p-8 text-center">
+                <CalendarCheck className="w-12 h-12 text-slate-500 mx-auto mb-3 opacity-30" />
+                <p className="text-slate-400 text-sm">Você ainda não tem reservas</p>
               </div>
             ) : (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: '0.6rem' }}>
+              <div className="space-y-3">
                 {minhasReservas.map(reserva => {
                   const isPast = new Date(reserva.date) < new Date(hoje.toDateString());
                   const isCancelled = reserva.status === 'cancelled';
                   return (
-                    <div key={reserva.id} style={{
-                      padding: '1rem', borderRadius: '14px',
-                      background: isCancelled ? 'rgba(239, 68, 68, 0.08)' : isPast ? 'rgba(255,255,255,0.02)' : 'rgba(34, 197, 94, 0.08)',
-                      border: isCancelled ? '1px solid rgba(239, 68, 68, 0.15)' : isPast ? '1px solid rgba(255,255,255,0.04)' : '1px solid rgba(34, 197, 94, 0.15)',
-                      opacity: isPast || isCancelled ? 0.6 : 1
-                    }}>
-                      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: '0.4rem' }}>
-                        <div style={{ fontWeight: 700, color: 'white', fontSize: '0.85rem' }}>{reserva.area_name}</div>
+                    <div
+                      key={reserva.id}
+                      className={`p-4 rounded-xl transition-all duration-200 group ${
+                        isCancelled
+                          ? 'bg-red-500/10 border border-red-400/20 opacity-60'
+                          : isPast
+                            ? 'bg-slate-700/20 border border-slate-600/20 opacity-60'
+                            : 'bg-green-500/10 border border-green-400/20 hover:bg-green-500/15 hover:border-green-400/30'
+                      }`}
+                    >
+                      <div className="flex justify-between items-start mb-2">
+                        <div className="font-semibold text-white text-sm group-hover:text-slate-100 transition-colors">
+                          {reserva.area_name}
+                        </div>
                         {!isPast && !isCancelled && (
-                          <button onClick={() => handleCancelar(reserva.id)} 
-                            style={{ background: 'rgba(239, 68, 68, 0.2)', border: 'none', borderRadius: '6px', padding: '0.3rem', cursor: 'pointer', display: 'flex' }}>
-                            <Trash2 size={14} color="#fca5a5" />
+                          <button
+                            onClick={() => handleCancelar(reserva.id)}
+                            className="bg-red-500/20 hover:bg-red-500/30 border border-red-400/30 hover:border-red-400/50 rounded-lg p-2 transition-all duration-200 hover:scale-105 active:scale-95 group/btn"
+                          >
+                            <Trash2 className="w-3.5 h-3.5 text-red-400 group-hover/btn:text-red-300" />
                           </button>
                         )}
                       </div>
-                      <div style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.75rem', display: 'flex', flexDirection: 'column', gap: '0.15rem' }}>
-                        <span>{new Date(reserva.date + 'T12:00:00').toLocaleDateString('pt-BR', { day: 'numeric', month: 'short', year: 'numeric' })}</span>
-                        <span>{reserva.start_time} - {reserva.end_time}</span>
-                        {reserva.event_name && <span style={{ color: '#c4b5fd' }}>{reserva.event_name}</span>}
+                      <div className="space-y-1 text-xs text-slate-400">
+                        <div className="flex items-center gap-2">
+                          <Calendar className="w-3 h-3" />
+                          <span>{new Date(reserva.date + 'T12:00:00').toLocaleDateString('pt-BR', {
+                            weekday: 'short',
+                            day: 'numeric',
+                            month: 'short',
+                            year: 'numeric'
+                          })}</span>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <Clock className="w-3 h-3" />
+                          <span>{reserva.start_time} - {reserva.end_time}</span>
+                        </div>
+                        {reserva.event_name && (
+                          <div className="flex items-center gap-2">
+                            <PartyPopper className="w-3 h-3" />
+                            <span className="text-violet-300">{reserva.event_name}</span>
+                          </div>
+                        )}
                       </div>
-                      {isCancelled && <span style={{ fontSize: '0.65rem', color: '#fca5a5', fontWeight: 600, marginTop: '0.3rem', display: 'block' }}>CANCELADA</span>}
+                      {isCancelled && (
+                        <div className="mt-2 inline-block">
+                          <span className="text-xs font-semibold text-red-400 bg-red-500/20 px-2 py-1 rounded-md">
+                            CANCELADA
+                          </span>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -341,6 +684,25 @@ export default function ReservasPage() {
             )}
           </div>
         </div>
+      </div>
+
+      {/* Custom CSS for scrollbars */}
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: rgba(71, 85, 105, 0.1);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: rgba(139, 92, 246, 0.3);
+          border-radius: 3px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: rgba(139, 92, 246, 0.5);
+        }
+      `}</style>
       </div>
 
       {/* Modal Multi-Step */}
